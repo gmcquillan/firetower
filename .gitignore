@@ -1,0 +1,10 @@
+*.pyc
+*.swp
+firetower/.Python
+bin/*
+include/*
+lib/*
+.Python
+build/
+pip-log.txt
+
