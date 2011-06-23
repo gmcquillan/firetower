@@ -1,16 +1,16 @@
-#!/usr/bin/env python
-
 import datetime
-import redis_util
-import simplejson as json
+from itertools import ifilter
+import json
 import time
 
-LEV = True
 try:
         import Levenshtein
+        LEV = True
 except ImportError:
         LEV = False
         import difflib
+
+from redis_util import Redis
 
 """Firetower Aggregator. Takes JSON data, increments counts, and saves data.
 
@@ -22,10 +22,11 @@ Then the JSON value of the error is saved in a time indexed hash.
 
 significant_keys = {'test': 'Test Error',}
 
+
 class Aggregator(object):
 
     def __init__(self):
-        self.r = redis_util.Redis()
+        self.r = Redis()
 
     def ratio(self, golden, test_str):
         """Use appropraite library to do comparisons."""
@@ -57,14 +58,12 @@ class Aggregator(object):
     def save_error(self, error, sig_key):
         """Save JSON encoded string into proper bucket."""
         error_data_key = 'data_%s' % (sig_key)
-        self.r.conn.zadd(error_data_key, time.time(), json.dumps(error))
+        self.r.conn.zadd(error_data_key,  json.dumps(error), int(time.time()))
 
     def consume(self, error):
         """Increment counters, store long-term data."""
-        for key in error:
-            if not error[key]:
-                    pass
+        for key, item in ifilter(lambda (x, y): y is not None, error.items()):
             for sig_key in significant_keys:
-                if self.is_similar(significant_keys[sig_key], error[key], 0.5):
+                if self.is_similar(significant_keys[sig_key], item, 0.5):
                     self.incr_counter(significant_keys[sig_key])
-                    #self.save_error(error, sig_key)
+                    self.save_error(error, sig_key)

@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-
 import pprint
-
+import datetime
+import time
 import redis_util
 
 
@@ -28,6 +27,7 @@ class Display(object):
 
         pprint.pprint(lastlogs)
 
-if __name__ == '__main__':
+
+def main():
     display = Display()
     display.dump_data(['Test Error'])

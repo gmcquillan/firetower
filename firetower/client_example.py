@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import redis_util
 import simplejson as json
 import random
@@ -18,6 +16,7 @@ FAKE_DATA = {"hostname": "testmachine",
              "programname": None,
              "severity": None}
 
+
 class ClientExample(object):
     """Main loop."""
 
@@ -33,6 +32,6 @@ class ClientExample(object):
                 print "Something went wrong storing value from redis"
 
 
-if __name__ == '__main__':
+def main():
     main = ClientExample()
     main.run()

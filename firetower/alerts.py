@@ -1,14 +1,11 @@
-#!/usr/bin/env python
-
 import datetime
-import redis_util
-import time
+from redis_util import Redis
 
 
 class Alert(object):
 
     def __init__(self):
-        self.conn = redis_util.Redis()
+        self.conn = Redis()
         self.all_counts = {}
 
     def send_alert(self, msg):
@@ -17,10 +14,11 @@ class Alert(object):
 
     def check_thresh(self, error_sums, timeslice, threshold):
         """Check to see if the sum exceeds the threshold for our time_slice."""
-        for error in error_sums:
-            if error_sums[error] > threshold:
-                self.send_alert("%s has violated %s threshold for %s timeperiod (%s)" %(
-                        error, threshold, timeslice, error_sums[error]))
+        for error, error_sum in error_sums.items():
+            if error_sum > threshold:
+                self.send_alert(
+                    "%s has violated %s threshold for %s timeperiod (%s)" % (
+                        error, threshold, timeslice, error_sum))
 
     def check(self, error_sigs, timeslices):
         """Run a check of all the thresholds."""

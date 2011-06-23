@@ -1,14 +1,12 @@
-#!/usr/bin/env python
-
 import datetime
-import simplejson as json
+import json
 import time
 
 from optparse import OptionParser
 
 import alerts
 import config
-import redis_util
+from redis_util import Redis
 import aggregator
 
 class Main(object):
@@ -28,7 +26,7 @@ class Main(object):
         conf = config.Config(options.conf_path)
 
         alert_time = None
-        queue = redis_util.Redis()
+        queue = Redis()
         aggr = aggregator.Aggregator()
         alert = alerts.Alert()
         while 1:
@@ -46,6 +44,6 @@ class Main(object):
                 time.sleep(1)
 
 
-if __name__ == '__main__':
+def main():
     main = Main()
     main.run()
