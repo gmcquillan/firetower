@@ -4,15 +4,47 @@ redis_util
 
 the main queue handler for firetower.
 """
+from heapq import heappush
+import time
 
 import redis
-import time
+from redis.exceptions import ConnectionError
+
+
+class MockRedis(object):
+    data = {}
+
+    def hincrby(self, root_key, sub_key, default):
+        rhash = self.data.get(root_key, {})
+        value = rhash.get(sub_key, 0)
+        rhash[sub_key] = value + default
+
+    def lpush(self, key, value):
+        val_list = self.data.get(key, [])
+        val_list.append(value)
+        self.data[key] = val_list
+
+    def rpop(self, key):
+        val_list = self.data.get(key, [])
+        if val_list:
+            return val_list.pop(-1)
+        else:
+            return None
+
+    def zadd(self, name, value, score):
+        zheap = self.data.get(name, [])
+        heappush(zheap, (score, value))
+        self.data[name] = zheap
 
 
 class Redis(object):
 
     def __init__(self):
-        self.conn = redis.Redis(host='localhost', port=6379, db=0)
+        try:
+            self.conn = redis.Redis(host='localhost', port=6379, db=0)
+            self.conn.ping()
+        except ConnectionError:
+            self.conn = MockRedis()
 
     def pop(self, key):
         return self.conn.rpop(key)
@@ -35,7 +67,6 @@ class Redis(object):
 
     def sum_timeslice_values(self, error_counts, timeslice, start=None):
         """Return sum of all error instances within time_slice."""
-        #XXX:dc: what are the error_counts a list of?
         if not start:
             start = int(time.time())
         end = start - timeslice
