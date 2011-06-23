@@ -21,8 +21,4 @@ setup(name="Firetower",
         'Programming Language :: Python :: 2.7',
         'Operating System :: Unix',
         ],
-
-      install_requires=[
-        'python-Levenshtein',
-        ],
-      )
+)
