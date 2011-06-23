@@ -21,11 +21,16 @@ class Redis(object):
         self.conn.lpush(key, value)
 
     def get_counts(self, tracked_keys):
-        """Return the hgetall for each tracked_key in a list."""
+        """
+        Return the hgetall for each tracked_key in a list.
+        redis keys are named queues
+        Values are {timestamp: count, ...}
+
+        returns something like {named_queue: { timestamp: count, ...}, ...}
+        """
         error_counts = {}
         for key in tracked_keys:
             error_counts[key] = self.conn.hgetall(key)
-
         return error_counts
 
     def sum_timeslice_values(self, error_counts, timeslice, start=None):
@@ -35,12 +40,10 @@ class Redis(object):
             start = int(time.time())
         end = start - timeslice
         error_sums = {}
-        for error in error_counts:
-            error_sums[error] = 0
-            for instant in error_counts[error]:
+        for queue, error_dict in error_counts.items():
+            error_sums[queue] = 0
+            for timestamp, count in error_dict.items():
                 thresh_start = int(end)
-                instant = int(instant.split('.')[0])
-                if instant > thresh_start:
-                    error_sums[error] += int(error_counts[error][str(instant)])
-
+                if timestamp > thresh_start:
+                    error_sums[queue] += count
         return error_sums

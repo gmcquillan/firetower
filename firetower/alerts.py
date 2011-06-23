@@ -1,12 +1,12 @@
 import datetime
-import redis_util
+from redis_util import Redis
 import time
 
 
 class Alert(object):
 
     def __init__(self):
-        self.conn = redis_util.Redis()
+        self.conn = Redis()
         self.all_counts = {}
 
     def send_alert(self, msg):
