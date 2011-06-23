@@ -1,10 +1,13 @@
-#!/usr/bin/env python
+"""
+redis_util
+----------
 
-import copy
+the main queue handler for firetower.
+"""
+
 import redis
 import time
 
-"""redis_util - the main queue handler for firetower."""
 
 class Redis(object):
 
@@ -27,6 +30,7 @@ class Redis(object):
 
     def sum_timeslice_values(self, error_counts, timeslice, start=None):
         """Return sum of all error instances within time_slice."""
+        #XXX:dc: what are the error_counts a list of?
         if not start:
             start = int(time.time())
         end = start - timeslice
@@ -34,7 +38,7 @@ class Redis(object):
         for error in error_counts:
             error_sums[error] = 0
             for instant in error_counts[error]:
-                thresh_start = int(start - timeslice)
+                thresh_start = int(end)
                 instant = int(instant.split('.')[0])
                 if instant > thresh_start:
                     error_sums[error] += int(error_counts[error][str(instant)])

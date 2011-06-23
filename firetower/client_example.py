@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import redis_util
 import simplejson as json
 import random
@@ -18,6 +16,7 @@ FAKE_DATA = {"hostname": "testmachine",
              "programname": None,
              "severity": None}
 
+
 class ClientExample(object):
     """Main loop."""
 
@@ -28,11 +27,11 @@ class ClientExample(object):
                 # Semi-randomly seed the 'sig' key in our fake errors
                 FAKE_DATA['sig'] = random.choice(FAKE_SIGS)
                 encoded = json.dumps(FAKE_DATA)
-                err = queue.push(queue_key, encoded)
-                except:
-                    print "Something went wrong storing value from redis"
+                queue.push(queue_key, encoded)
+            except:
+                print "Something went wrong storing value from redis"
 
 
-if __name__ == '__main__':
+def main():
     main = ClientExample()
     main.run()

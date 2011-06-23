@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import datetime
 import redis_util
 import time
