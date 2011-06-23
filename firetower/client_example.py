@@ -29,8 +29,8 @@ class ClientExample(object):
                 FAKE_DATA['sig'] = random.choice(FAKE_SIGS)
                 encoded = json.dumps(FAKE_DATA)
                 err = queue.push(queue_key, encoded)
-                except:
-                    print "Something went wrong storing value from redis"
+            except:
+                print "Something went wrong storing value from redis"
 
 
 if __name__ == '__main__':

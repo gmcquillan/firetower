@@ -22,11 +22,11 @@ class Alert(object):
                 self.send_alert("%s has violated %s threshold for %s timeperiod (%s)" %(
                         error, threshold, timeslice, error_sums[error]))
 
-    def check(self, tracked_keys, timeslices, thresholds):
+    def check(self, error_sigs, timeslices):
         """Run a check of all the thresholds."""
-        counts = self.conn.get_counts(tracked_keys)
+        counts = self.conn.get_counts(error_sigs.keys())
         for timeslice in timeslices:
             error_sums = self.conn.sum_timeslice_values(counts, timeslice)
-            # Should relate a threshold to a timeslice.
-            for threshold in thresholds:
-                self.check_thresh(error_sums, timeslice, threshold)
+            for error in error_sigs:
+                for threshold in error_sigs[error]['alert_thresholds'].values():
+                    self.check_thresh(error_sums, timeslice, int(threshold))
