@@ -2,8 +2,13 @@
 
 queue_key: incoming
 
+# Time Between Alert Checks
+
 alert_time:
     0.5
+
+# How far back in time we look for error counts.
+
 timeslices:
   - 300  # Look 5 minutes into the past for threshold checks
 
