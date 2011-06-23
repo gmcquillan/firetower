@@ -20,6 +20,13 @@ class TestAggregator(TestCase):
         test_str = "combat"
         assert self.agg.is_similar(know_str, test_str, 0.5)
 
+    def test_incr_counter(self):
+        key = 'test-key'
+        self.agg.incr_counter(key)
+        from pdb import set_trace; set_trace()
+        saved = self.agg.r.get_counts(['test-key'])
+
+
     def test_consume(self):
         error = {'test': 'Test Erronius'}
         self.agg.consume(error)

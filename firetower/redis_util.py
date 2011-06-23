@@ -14,10 +14,14 @@ from redis.exceptions import ConnectionError
 class MockRedis(object):
     data = {}
 
+    def hgetall(self, key):
+        return self.data[key]
+
     def hincrby(self, root_key, sub_key, default):
         rhash = self.data.get(root_key, {})
         value = rhash.get(sub_key, 0)
         rhash[sub_key] = value + default
+        self.data[root_key] = rhash
 
     def lpush(self, key, value):
         val_list = self.data.get(key, [])
