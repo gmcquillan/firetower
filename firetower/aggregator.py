@@ -1,16 +1,15 @@
-#!/usr/bin/env python
-
 import datetime
-import redis_util
-import simplejson as json
+import json
 import time
 
-LEV = True
 try:
         import Levenshtein
+        LEV = True
 except ImportError:
         LEV = False
         import difflib
+
+from redis_util import Redis
 
 """Firetower Aggregator. Takes JSON data, increments counts, and saves data.
 
@@ -22,10 +21,11 @@ Then the JSON value of the error is saved in a time indexed hash.
 
 significant_keys = {'test': 'Test Error',}
 
+
 class Aggregator(object):
 
     def __init__(self):
-        self.r = redis_util.Redis()
+        self.r = Redis()
 
     def ratio(self, golden, test_str):
         """Use appropraite library to do comparisons."""

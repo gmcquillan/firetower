@@ -1,4 +1,7 @@
-from setuptools import find_packages, setup
+try:
+    from setuptools import setup, find_packages
+except ImportError:
+    from distutils.core import setup, find_packages
 
 setup(name="Firetower",
       version="dev",
@@ -22,7 +25,16 @@ setup(name="Firetower",
         'Operating System :: Unix',
         ],
 
+      entry_points={
+        'console_scripts': [
+            'firetower-server=firetower.firetower:main',
+            'firetower-display=firetower.display:main',
+            'firetower-client=firetower.client:main',
+            ],
+        },
+
       install_requires=[
         'python-Levenshtein',
+        'redis',
         ],
       )
