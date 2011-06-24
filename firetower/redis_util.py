@@ -42,10 +42,17 @@ class MockRedis(object):
 
 
 class Redis(object):
+    """Redis - Controls all Firetower interaction with Redis."""
 
-    def __init__(self):
+    def __init__(self, conf):
+        """Initialize Redis Connections.
+
+        Args:
+            conf: conf.Config obj, container for configuraton data
+        """
         try:
-            self.conn = redis.Redis(host='localhost', port=6379, db=0)
+            self.conn = redis.Redis(
+                host=conf.redis_host, port=conf.redis_port, db=0)
             self.conn.ping()
         except ConnectionError:
             self.conn = MockRedis()
@@ -80,5 +87,5 @@ class Redis(object):
             for timestamp, count in error_dict.items():
                 thresh_start = int(end)
                 if timestamp > thresh_start:
-                    error_sums[queue] += count
+                    error_sums[queue] += int(count)
         return error_sums

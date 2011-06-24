@@ -1,8 +1,10 @@
-import redis_util
 import simplejson as json
 import random
 
-queue_key = 'incoming'
+from optparse import OptionParser
+
+import config
+import redis_util
 
 FAKE_SIGS = ["Test Error, Exception Blah",
              "I'm broken!",
@@ -17,21 +19,34 @@ FAKE_DATA = {"hostname": "testmachine",
              "severity": None}
 
 
-class ClientExample(object):
+class Client(object):
     """Main loop."""
 
-    def run(self):
-        queue = redis_util.Redis()
-        for i in xrange(0, 10000):
+    def run(self, conf):
+        queue = redis_util.Redis(conf)
+        print queue.conn.keys()
+        for i in xrange(0, 10):
             try:
                 # Semi-randomly seed the 'sig' key in our fake errors
                 FAKE_DATA['sig'] = random.choice(FAKE_SIGS)
                 encoded = json.dumps(FAKE_DATA)
-                err = queue.push(queue_key, encoded)
+                err = queue.push(conf.queue_key, encoded)
             except:
                 print "Something went wrong storing value from redis"
 
 
 def main():
-    main = ClientExample()
-    main.run()
+    parser = OptionParser(usage='usage: firetower options args')
+    parser.add_option(
+        '--conf', action='store', dest='conf_path',
+         help='Path to YAML configuration file.')
+
+    (options, args) = parser.parse_args()
+
+    if len(args) > 1:
+        parser.error('Please supply some arguments')
+
+    conf = config.Config(options.conf_path)
+
+    main = Client()
+    main.run(conf)

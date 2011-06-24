@@ -1,11 +1,17 @@
-# Queue source for classification
+#
+# Sample Firetower Config
+#
 
+# Redis Server
+# redis_host: localhost
+# redis_port: 6379
+
+# Queue source for classification
 queue_key: incoming
 
 # Time Between Alert Checks
 
-alert_time:
-    0.5
+alert_time: 0.5
 
 # How far back in time we look for error counts.
 

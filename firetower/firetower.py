@@ -26,9 +26,9 @@ class Main(object):
         conf = config.Config(options.conf_path)
 
         alert_time = None
-        queue = Redis()
-        aggr = aggregator.Aggregator()
-        alert = alerts.Alert()
+        queue = Redis(conf)
+        aggr = aggregator.Aggregator(queue)
+        alert = alerts.Alert(queue)
         while 1:
             now = datetime.datetime.now()
             err = queue.pop(conf.queue_key)

@@ -4,8 +4,8 @@ from redis_util import Redis
 
 class Alert(object):
 
-    def __init__(self):
-        self.conn = Redis()
+    def __init__(self, redis):
+        self.conn = redis
         self.all_counts = {}
 
     def send_alert(self, msg):

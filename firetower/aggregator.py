@@ -25,8 +25,8 @@ significant_keys = {'test': 'Test Error',}
 
 class Aggregator(object):
 
-    def __init__(self):
-        self.r = Redis()
+    def __init__(self, redis):
+        self.r = redis
 
     def ratio(self, golden, test_str):
         """Use appropraite library to do comparisons."""
