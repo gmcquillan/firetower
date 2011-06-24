@@ -51,19 +51,10 @@ class Aggregator(object):
 
         return False
 
-    def incr_counter(self, root_key):
-        """Increment normalized count of errors by type."""
-        self.r.conn.hincrby(root_key, int(time.time()), 1) # default inc of 1.
-
-    def save_error(self, error, sig_key):
-        """Save JSON encoded string into proper bucket."""
-        error_data_key = 'data_%s' % (sig_key)
-        self.r.conn.zadd(error_data_key,  json.dumps(error), int(time.time()))
-
     def consume(self, error):
         """Increment counters, store long-term data."""
         for key, item in ifilter(lambda (x, y): y is not None, error.items()):
             for sig_key in significant_keys:
                 if self.is_similar(significant_keys[sig_key], item, 0.5):
-                    self.incr_counter(significant_keys[sig_key])
-                    self.save_error(error, sig_key)
+                    self.r.incr_counter(significant_keys[sig_key])
+                    self.r.save_error(error, sig_key)

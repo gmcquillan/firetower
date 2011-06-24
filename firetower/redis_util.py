@@ -89,3 +89,13 @@ class Redis(object):
                 if timestamp > thresh_start:
                     error_sums[queue] += int(count)
         return error_sums
+
+    def incr_counter(self, root_key):
+        """Increment normalized count of errors by type."""
+        self.conn.hincrby(root_key, int(time.time()), 1) # default inc of 1.
+
+    def save_error(self, error, sig_key):
+        """Save JSON encoded string into proper bucket."""
+        error_data_key = 'data_%s' % (sig_key)
+        self.conn.zadd(error_data_key,  json.dumps(error), int(time.time()))
+
