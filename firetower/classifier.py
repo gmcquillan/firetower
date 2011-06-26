@@ -69,25 +69,30 @@ class Levenshtein(Classifier):
         Args:
             error: dict of json payload with a 'sig' key.
         """
-        categories = self.redis.get_categories()
-        print "categories: ", categories
         sig = error.get('sig', 'unknown')
-        print "sig: ", sig
         # Check the unclassified errors first.
-        num_uk_errors = self.redis.conn.llen('unknown_errors')
-        if num_uk_errors:
-            for _ in range(0, num_uk_errors):
-                uk_error = self.redis.get_unknown_error()
-                uk_error = json.loads(uk_error)
-                print uk_error
-                print type(uk_error)
+        uk_errors = self.redis.get_unknown_errors()
+        # If we have any previous unknown errors,
+        # let's see if our new message matches
+        if uk_errors:
+            for uk_error in uk_errors:
+                uk_error = json.loads(uk_error) # This ends up a str?
+                # Is our new error a match?
                 if self.is_similar(uk_error['sig'], sig, 0.7):
+                    # Save these as a new category, normalize, store.
                     cat = longest_common_substr(uk_error['sig'], sig)
                     self.write_errors(cat, uk_error)
                     self.write_errors(cat, error)
                     self.redis.add_category(cat)
+                    continue
+                # Can't categorize; store as new unknown.
                 else:
-                    self.redis.add_unknown_error(json.dumps(uk_error))
+                    self.redis.save_error(
+                            'unknown_errors', json.dumps(uk_error))
+
+        categories = self.redis.get_categories()
+
+        # Let's see if our message matches a category
         if categories:
             for cat in categories:
                 result = self.redis.get_latest_data(cat)
@@ -95,11 +100,15 @@ class Levenshtein(Classifier):
                     latest_error = json.loads(result)
                 except TypeError, e:
                     print "Ran into problem with JSON", e
+                    print "latest_error: ", latest_error
+                    print "type: ", type(latest_error)
                     continue
-                print "This is the latest_error: ", latest_error
                 if self.is_similar(latest_error['sig'], sig, 0.7):
                     self.write_errors(cat, error)
                 else:
-                    self.redis.add_unknown_error(error)
+                    self.redis.save_error(
+                            'unknown_errors', json.dumps(uk_error))
+                continue
         else:
-            self.redis.add_unknown_error(error)
+            self.redis.save_error(
+                    'unknown_errors', json.dumps(uk_error))

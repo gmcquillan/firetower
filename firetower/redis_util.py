@@ -112,11 +112,11 @@ class Redis(object):
 
     def add_unknown_error(self, error):
         """Add unknown Error to the list."""
-        self.push('unknown_errors', json.dumps(error))
+        self.conn.zadd('unknown_errors', json.dumps(error), time.time())
 
     def get_unknown_error(self):
         """Retrieve unknown errors."""
-        return self.pop('unknown_errors')
+        return self.conn.zrange("unknown_errors", 0, -1)
 
     def get_latest_data(self, category):
         """Return the most recent payload from a given category."""
