@@ -5,6 +5,7 @@ redis_util
 the main queue handler for firetower.
 """
 from heapq import heappush
+import json
 import time
 
 import redis
@@ -92,10 +93,37 @@ class Redis(object):
 
     def incr_counter(self, root_key):
         """Increment normalized count of errors by type."""
-        self.conn.hincrby(root_key, int(time.time()), 1) # default inc of 1.
+        self.conn.hincrby(root_key.replace(' ', '_'), int(time.time()), 1)
 
-    def save_error(self, error, sig_key):
+    def save_error(self, cat, error):
         """Save JSON encoded string into proper bucket."""
-        error_data_key = 'data_%s' % (sig_key)
-        self.conn.zadd(error_data_key,  json.dumps(error), int(time.time()))
+        error_data_key = cat.replace(' ','_')
+        ts = time.time() # our timestamp, needed for uniq
+        error['ts'] = ts
+        self.conn.zadd(error_data_key,  json.dumps(error), ts)
+
+    def add_category(self, category):
+        """Add category to our sorted set of categories."""
+        self.conn.zadd('categories', category, 0)
+
+    def get_categories(self):
+        """Retrieve the full category set."""
+        return self.conn.zrange('categories', 0, -1)
+
+    def add_unknown_error(self, error):
+        """Add unknown Error to the list."""
+        self.push('unknown_errors', json.dumps(error))
+
+    def get_unknown_error(self):
+        """Retrieve unknown errors."""
+        return self.pop('unknown_errors')
+
+    def get_latest_data(self, category):
+        """Return the most recent payload from a given category."""
+        print "category: ", category
+        data_key = 'data_%s' % (category,)
+        print "data_key: ", data_key
+        list_of_errors = self.conn.zrevrange(data_key, 0, 0)
+        if list_of_errors:
+            return list_of_errors[0]
 

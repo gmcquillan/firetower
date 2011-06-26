@@ -25,7 +25,7 @@ class Client(object):
     def run(self, conf):
         queue = redis_util.Redis(conf)
         print queue.conn.keys()
-        for i in xrange(0, 10):
+        for i in xrange(0, 5):
             try:
                 # Semi-randomly seed the 'sig' key in our fake errors
                 FAKE_DATA['sig'] = random.choice(FAKE_SIGS)

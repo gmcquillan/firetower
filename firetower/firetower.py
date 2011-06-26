@@ -6,8 +6,8 @@ from optparse import OptionParser
 
 import alerts
 import config
+import classifier
 from redis_util import Redis
-import aggregator
 
 class Main(object):
     """Main loop."""
@@ -27,7 +27,7 @@ class Main(object):
 
         alert_time = None
         queue = Redis(conf)
-        aggr = aggregator.Aggregator(queue)
+        cls = classifier.Levenshtein(queue)
         alert = alerts.Alert(queue)
         while 1:
             now = datetime.datetime.now()
@@ -39,7 +39,7 @@ class Main(object):
                 alert_time = datetime.timedelta(minutes=conf.alert_time) + now
             if err:
                 parsed = json.loads(err)
-                aggr.consume(parsed)
+                cls.classify(parsed)
             else:
                 time.sleep(1)
 
