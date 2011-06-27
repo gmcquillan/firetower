@@ -68,20 +68,24 @@ class Levenshtein(Classifier):
         sig = error['sig']
         unknown = 'unknown_errors'
         if cat == unknown:
-            cat_errors = self.get_unknown_errors()
+            cat_errors = self.redis.get_unknown_errors()
         else:
-            cat_errors = self.get_latest_data(cat)
+            cat_errors = self.redis.get_latest_data(cat)
+        if not cat_errors:
+            return None
         for cat_error in cat_errors:
             decode_error = json.loads(cat_error)
             cat_sig = decode_error['sig']
             if self.is_similar(cat_sig, sig, 0.7):
                 if cat == unknown:
                     cat = longest_common_substr(cat_sig, sig)
-                    self.add_category(cat)
-                    self.write_errors(cat, cat_error)
+                    self.redis.add_category(cat)
+                    print "cat: ", cat, "cat_error: ", cat_error
+                    print "type: ", type(cat_error)
+                    self.write_errors(cat, decode_error)
                 self.write_errors(cat, error)
             else:
-                self.save_error(unknown, error)
+                self.redis.save_error(unknown, error)
 
     def classify(self, error):
         """Determine which category, if any, a signature belongs to.
@@ -94,46 +98,12 @@ class Levenshtein(Classifier):
         Args:
             error: dict of json payload with a 'sig' key.
         """
-        sig = error.get('sig', 'unknown')
-        # Check the unclassified errors first.
-        uk_errors = self.redis.get_unknown_errors()
-        # If we have any previous unknown errors,
-        # let's see if our new message matches
-        if uk_errors:
-            for uk_error in uk_errors:
-                uk_error = json.loads(uk_error) # This ends up a str?
-                # Is our new error a match?
-                if self.is_similar(uk_error['sig'], sig, 0.7):
-                    # Save these as a new category, normalize, store.
-                    cat = longest_common_substr(uk_error['sig'], sig)
-                    self.write_errors(cat, uk_error)
-                    self.write_errors(cat, error)
-                    self.redis.add_category(cat)
-                    continue
-                # Can't categorize; store as new unknown.
-                else:
-                    self.redis.save_error(
-                            'unknown_errors', json.dumps(uk_error))
-
+        self.check_message('unknown_errors', error)
         categories = self.redis.get_categories()
-
         # Let's see if our message matches a category
         if categories:
             for cat in categories:
-                result = self.redis.get_latest_data(cat)
-                try:
-                    latest_error = json.loads(result)
-                except TypeError, e:
-                    print "Ran into problem with JSON", e
-                    print "latest_error: ", latest_error
-                    print "type: ", type(latest_error)
-                    continue
-                if self.is_similar(latest_error['sig'], sig, 0.7):
-                    self.write_errors(cat, error)
-                else:
-                    self.redis.save_error(
-                            'unknown_errors', json.dumps(uk_error))
-                continue
+                self.check_message(cat, error)
         else:
             self.redis.save_error(
-                    'unknown_errors', json.dumps(uk_error))
+                    'unknown_errors', error)
