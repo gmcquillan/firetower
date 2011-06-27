@@ -58,6 +58,31 @@ class Levenshtein(Classifier):
         self.redis.incr_counter(cat_counter)
         self.redis.save_error(cat_data, error)
 
+    def check_message(self, cat, error):
+        """Compare error with messages from a category.
+        
+        Args:
+            cat: str, keyname of a category (maybe unknown_errors)
+            error: dict, error message we're processing
+        """
+        sig = error['sig']
+        unknown = 'unknown_errors'
+        if cat == unknown:
+            cat_errors = self.get_unknown_errors()
+        else:
+            cat_errors = self.get_latest_data(cat)
+        for cat_error in cat_errors:
+            decode_error = json.loads(cat_error)
+            cat_sig = decode_error['sig']
+            if self.is_similar(cat_sig, sig, 0.7):
+                if cat == unknown:
+                    cat = longest_common_substr(cat_sig, sig)
+                    self.add_category(cat)
+                    self.write_errors(cat, cat_error)
+                self.write_errors(cat, error)
+            else:
+                self.save_error(unknown, error)
+
     def classify(self, error):
         """Determine which category, if any, a signature belongs to.
 
