@@ -4,7 +4,7 @@ redis_util
 
 the main queue handler for firetower.
 """
-from heapq import heappush
+from heapq import heappush, merge
 import json
 import time
 
@@ -41,11 +41,26 @@ class MockRedis(object):
         heappush(zheap, (score, value))
         self.data[name] = zheap
 
+    def _zrange_op(self, name, start, stop, reverse):
+        zheap = self.data.get(name, [])
+        if stop < 0:
+            stop += len(zheap) + 1
+        heap_list = list(merge(zheap))
+        if reverse:
+            heap_list.reverse()
+        return heap_list[start:stop]
+
+    def zrange(self, name, start, stop):
+        return self._zrange_op(name, start, stop, False)
+
+    def zrevrange(self, name, start, stop):
+        return self._zrange_op(name, start, stop, True)
+
 
 class Redis(object):
     """Redis - Controls all Firetower interaction with Redis."""
 
-    def __init__(self, conf):
+    def __init__(self, host, port):
         """Initialize Redis Connections.
 
         Args:
@@ -53,7 +68,7 @@ class Redis(object):
         """
         try:
             self.conn = redis.Redis(
-                host=conf.redis_host, port=conf.redis_port, db=0)
+                host=host, port=port, db=0)
             self.conn.ping()
         except ConnectionError:
             self.conn = MockRedis()
@@ -129,4 +144,3 @@ class Redis(object):
         list_of_errors = self.conn.zrevrange(data_key, 0, 0)
         if list_of_errors:
             return list_of_errors
-

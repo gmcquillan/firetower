@@ -26,7 +26,7 @@ class Main(object):
         conf = config.Config(options.conf_path)
 
         alert_time = None
-        queue = Redis(conf)
+        queue = Redis(host=conf.host, port=conf.port)
         cls = classifier.Levenshtein(queue)
         alert = alerts.Alert(queue)
         while 1:
