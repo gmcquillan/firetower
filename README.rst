@@ -42,8 +42,6 @@ write normalized count data into a key named after the error signature you're tr
 TODO
 ----
 
-- Durable storage of error logs in a timeseries
-- Configuration parsing
 - Display/frontend
 - Plugable Classifiers 
 - Installation Scripts
