@@ -1,12 +1,14 @@
 from unittest import TestCase
 
 from firetower.aggregator import Aggregator
+from firetower.redis_util import Redis
 
 
 class TestAggregator(TestCase):
 
     def setUp(self):
-        self.agg = Aggregator()
+        self.r = Redis('localhost', 6379)
+        self.agg = Aggregator(self.r)
 
     def test_str_ratio(self):
         known_str = "hello"
@@ -22,12 +24,10 @@ class TestAggregator(TestCase):
 
     def test_incr_counter(self):
         key = 'test-key'
-        self.agg.incr_counter(key)
-        from pdb import set_trace; set_trace()
-        saved = self.agg.r.get_counts(['test-key'])
-
+        self.agg.r.incr_counter(key)
+        assert self.agg.r.get_counts(['test-key']) > 0
 
     def test_consume(self):
         error = {'test': 'Test Erronius'}
         self.agg.consume(error)
-        assert self.agg.r.pop('data_test')
+        assert self.agg.r.pop('test')
