@@ -110,9 +110,16 @@ class Redis(object):
         """Retrieve the full category set."""
         return self.conn.zrange('categories', 0, -1)
 
+    def add_unknown_error(self, error):
+        """Add an unknown error to our list."""
+        self.push('unknown_errors', json.dumps(error))
+
     def get_unknown_errors(self):
-        """Return a list of JSON encoded unknown errors."""
-        return self.conn.zrange("unknown_errors", 0, -1)
+        """Generator to return one value from unknown_errors at a time."""
+        num = 0
+        while num < self.conn.llen('unknown_errors'):
+            yield self.pop('unknown_errors')
+            num += 1
 
     def get_latest_data(self, category):
         """Return list of the most recent json encoded errors for a category."""
