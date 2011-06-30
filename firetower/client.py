@@ -4,7 +4,7 @@ import random
 from optparse import OptionParser
 
 import config
-import redis_util
+from redis_util import Redis
 
 FAKE_SIGS = ["Test Error, Exception Blah",
              "I'm broken!",
@@ -23,7 +23,7 @@ class Client(object):
     """Main loop."""
 
     def run(self, conf):
-        queue = redis_util.Redis(conf)
+        queue = Redis(host=conf.host, port=conf.port)
         print queue.conn.keys()
         for i in xrange(0, 5):
             try:
