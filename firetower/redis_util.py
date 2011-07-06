@@ -29,7 +29,6 @@ class MockRedis(object):
         new = [value]
         new.extend(val_list)
         val_list = new
-        #val_list.append(value)
         self.data[key] = val_list
 
     def lpop(self, key):
@@ -38,7 +37,6 @@ class MockRedis(object):
             return val_list.pop(0)
         else:
             return None
-
 
     def rpop(self, key):
         val_list = self.data.get(key, [])
