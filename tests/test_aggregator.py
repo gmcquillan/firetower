@@ -1,10 +1,10 @@
-from unittest import TestCase
+import unittest
 
 from firetower.aggregator import Aggregator
 from firetower.redis_util import Redis
 
 
-class TestAggregator(TestCase):
+class TestAggregator(unittest.TestCase):
 
     def setUp(self):
         self.r = Redis('localhost', 6379)
@@ -31,3 +31,7 @@ class TestAggregator(TestCase):
         error = {'test': 'Test Erronius'}
         self.agg.consume(error)
         assert self.agg.r.pop('test')
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,9 +1,9 @@
-from unittest import TestCase
+import unittest
 
 from firetower.redis_util import MockRedis
 
 
-class TestMockRedis(TestCase):
+class TestMockRedis(unittest.TestCase):
 
     def setUp(self):
         self.r = MockRedis()
@@ -25,3 +25,6 @@ class TestMockRedis(TestCase):
                 [(3, 'three'), (2, 'two'), (1, 'one')])
         assert self.r.zrevrange('myzlist', 2, 3) == [(1, 'one')]
         assert self.r.zrevrange('myzlist', -2, -1) == [(2, 'two'), (1, 'one')]
+
+if __name__ == '__main__':
+    unittest.main()

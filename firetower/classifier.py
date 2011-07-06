@@ -12,15 +12,18 @@ def longest_common_substr(s1, s2):
     http://en.wikibooks.org/wiki/Algorithm_implementation/Strings/ \
     Longest_common_substring#Python
     """
+    if len(s1) < len(s2):
+        s1, s2 = s2, s1
+
     M = [[0]*(1+len(s1)) for i in xrange(1+len(s1))]
     longest, x_longest = 0, 0
-    for x in xrange(1,1+len(s1)):
-        for y in xrange(1,1+len(s2)):
+    for x in xrange(1, 1+len(s1)):
+        for y in xrange(1, 1+len(s2)):
             if s1[x-1] == s2[y-1]:
                 M[x][y] = M[x-1][y-1] + 1
-                if M[x][y]>longest:
+                if M[x][y] > longest:
                     longest = M[x][y]
-                    x_longest  = x
+                    x_longest = x
             else:
                 M[x][y] = 0
     return s1[x_longest-longest: x_longest]
