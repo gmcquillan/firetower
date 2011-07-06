@@ -26,8 +26,19 @@ class MockRedis(object):
 
     def lpush(self, key, value):
         val_list = self.data.get(key, [])
-        val_list.append(value)
+        new = [value]
+        new.extend(val_list)
+        val_list = new
+        #val_list.append(value)
         self.data[key] = val_list
+
+    def lpop(self, key):
+        val_list = self.data.get(key, [])
+        if val_list:
+            return val_list.pop(0)
+        else:
+            return None
+
 
     def rpop(self, key):
         val_list = self.data.get(key, [])
