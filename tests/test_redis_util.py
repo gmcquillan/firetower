@@ -1,10 +1,10 @@
-import unittest
+from unittest import TestCase
 
 from firetower.redis_util import MockRedis
 from firetower.redis_util import Redis
 
 
-class TestMockRedis(unittest.TestCase):
+class TestMockRedis(TestCase):
 
     def setUp(self):
         self.r = MockRedis()
@@ -29,7 +29,7 @@ class TestMockRedis(unittest.TestCase):
         assert self.r.zrevrange('myzlist', -2, -1) == [(2, 'two'), (1, 'one')]
 
 
-class TestRedisUtil(unittest.TestCase):
+class TestRedisUtil(TestCase):
 
     def setUp(self):
         self.r = MockRedis()
@@ -52,8 +52,3 @@ class TestRedisUtil(unittest.TestCase):
         result = self.r.lpop('test_key')
 
         assert result == test_val
-
-
-
-if __name__ == '__main__':
-    unittest.main()

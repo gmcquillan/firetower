@@ -1,9 +1,9 @@
-import unittest
+from unittest import TestCase
 
 from firetower import classifier
 from firetower.redis_util import Redis
 
-class TestClassfier(unittest.TestCase):
+class TestClassfier(TestCase):
 
     def test_lcs(self):
         """Test the longest common substring function."""
@@ -21,7 +21,7 @@ class TestClassfier(unittest.TestCase):
         assert result2 == lcs
 
 
-class TestLevenshtein(unittest.TestCase):
+class TestLevenshtein(TestCase):
 
     def setUp(self):
         self.r = Redis('localhost', 6379)
@@ -41,8 +41,4 @@ class TestLevenshtein(unittest.TestCase):
         know_str = "wombat"
         test_str = "combat"
         assert self.lev.is_similar(know_str, test_str, 0.5)
-
-
-if __name__ == '__main__':
-    unittest.main()
 
