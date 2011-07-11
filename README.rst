@@ -67,6 +67,19 @@ fake errors into the queue (with one of four random signatures).
 Then, if you want to run the aggregator/classifcation daemon, run firetower.py. It will pull data out of the 'incoming' redis key, classify it, and
 write normalized count data into a key named after the error signature you're tracking.
 
+Running Tests
+-------------
+
+Make sure that you have nosetests installed
+
+::
+    pip install nosetests
+
+::
+    cd firetower
+    nosetests
+
+
 
 TODO
 ----
