@@ -26,8 +26,7 @@ class MockRedis(object):
 
     def lpush(self, key, value):
         val_list = self.data.get(key, [])
-        new = [value]
-        new.extend(val_list)
+        new = [value] + val_list
         val_list = new
         self.data[key] = val_list
 
