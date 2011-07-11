@@ -35,7 +35,7 @@ class Config(object):
 
     def check_config(self, conf_dict):
         """Make sure we have expected keys with some value.
-        
+
         Args:
             conf_dict: a dict which contains all of the configuraiton parameters for
                 alerting and classification. It should look similar to this:
