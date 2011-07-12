@@ -15,7 +15,7 @@ class Main(object):
     def run(self):
         parser = OptionParser(usage='usage: firetower options args')
         parser.add_option(
-                '--conf', action='store', dest='conf_path',
+                '-c', '--conf', action='store', dest='conf_path',
                 help='Path to YAML configuration file.')
 
         (options, args) = parser.parse_args()
