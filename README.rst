@@ -74,14 +74,18 @@ We usually just use a test discovery tool called nosetests
 Make sure that you have nosetests installed:
 
 ::
+
     pip install nosetests
+
 ::
+
     cd firetower
     nosetests
 
 Alternatively, you can just run:
 
 ::
+
     python -m unittest discover
 
 
