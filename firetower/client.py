@@ -1,21 +1,22 @@
-import random
 import simplejson as json
-import textwrap
+import random
 
 from optparse import OptionParser
 
 import config
 from redis_util import Redis
 
-FAKE_SIGS = [
-'Test Exception', 'Another Random Error'
+FAKE_SIGS = ["Test Error, Exception Blah",
+             "I'm broken!",
+             "Etc.",
+             "Yup!"
 ]
-FAKE_DATA = {'hostname': 'testmachine',
-             'msg': 'I/O Exception from some file',
-             'logfacility': 'local1',
-             'syslogtag': 'test',
-             'programname': 'firetower client',
-             'severity': None}
+FAKE_DATA = {"hostname": "testmachine",
+             "msg": "I/O Exception from some file",
+             "logfacility": None,
+             "syslogtag": None,
+             "programname": None,
+             "severity": None}
 
 
 class Client(object):
@@ -24,11 +25,10 @@ class Client(object):
     def run(self, conf):
         queue = Redis(host=conf.host, port=conf.port)
         print queue.conn.keys()
-        for i in xrange(0, 50):
+        for i in xrange(0, 5):
             try:
                 # Semi-randomly seed the 'sig' key in our fake errors
                 FAKE_DATA['sig'] = random.choice(FAKE_SIGS)
-                print FAKE_DATA
                 encoded = json.dumps(FAKE_DATA)
                 err = queue.push(conf.queue_key, encoded)
             except:
@@ -38,7 +38,7 @@ class Client(object):
 def main():
     parser = OptionParser(usage='usage: firetower options args')
     parser.add_option(
-        '-c', '--conf', action='store', dest='conf_path',
+        '--conf', action='store', dest='conf_path',
          help='Path to YAML configuration file.')
 
     (options, args) = parser.parse_args()
