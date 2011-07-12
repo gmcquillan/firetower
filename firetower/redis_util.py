@@ -24,6 +24,13 @@ class MockRedis(object):
         rhash[sub_key] = value + default
         self.data[root_key] = rhash
 
+    def keys(self):
+        return self.data.keys()
+
+    def llen(self, key):
+        values = self.data.get(key, [])
+        return len(values)
+
     def lpush(self, key, value):
         val_list = self.data.get(key, [])
         new = [value] + val_list
