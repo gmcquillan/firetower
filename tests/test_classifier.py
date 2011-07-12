@@ -1,3 +1,4 @@
+import json
 from unittest import TestCase
 
 from firetower import classifier
@@ -42,3 +43,16 @@ class TestLevenshtein(TestCase):
         test_str = "combat"
         assert self.lev.is_similar(know_str, test_str, 0.5)
 
+    def test_write_errors(self):
+        """Test Levenshtein.write_errors function."""
+        test_error = {'sig': 'Testing Exception', 'body': 'Error! Alert!'}
+        test_cat = "Testing"
+        self.lev.write_errors(test_cat, test_error)
+        count_res = self.r.conn.hgetall('counter_%s' % (test_cat,))
+        # Only want the payload, not the time index, so [1]
+        data_res = json.loads(
+                self.r.conn.zrange('data_%s' % (test_cat), 0, -1)[0][1])
+
+        assert count_res
+        assert data_res['sig'] == test_error['sig']
+        assert data_res['body'] == test_error['body']

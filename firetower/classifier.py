@@ -63,8 +63,11 @@ class Levenshtein(Classifier):
         return False
 
     def write_errors(self, cat, error):
-        """Increment counters, save data."""
-
+        """Increment counters, save data.
+        Args:
+            cat: str, category name.
+            error: dict, new payload to save.
+        """
         cat_counter = 'counter_%s' % (cat,)
         cat_data = 'data_%s' % (cat,)
         self.redis.incr_counter(cat_counter)
