@@ -1,15 +1,17 @@
 import random
 import simplejson as json
 import textwrap
-
 from optparse import OptionParser
 
 import config
 from redis_util import Redis
+import tracebacks
 
 FAKE_SIGS = [
 'Test Exception', 'Another Random Error'
 ]
+FAKE_SIGS = tracebacks.tracebacks
+
 FAKE_DATA = {'hostname': 'testmachine',
              'msg': 'I/O Exception from some file',
              'logfacility': 'local1',
@@ -17,12 +19,11 @@ FAKE_DATA = {'hostname': 'testmachine',
              'programname': 'firetower client',
              'severity': None}
 
-
 class Client(object):
     """Main loop."""
 
     def run(self, conf):
-        queue = Redis(host=conf.host, port=conf.port)
+        queue = Redis(host=conf.redis_host, port=conf.redis_port)
         print queue.conn.keys()
         for i in xrange(0, 50):
             try:
