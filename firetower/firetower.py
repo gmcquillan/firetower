@@ -15,7 +15,7 @@ class Main(object):
     def run(self):
         parser = OptionParser(usage='usage: firetower options args')
         parser.add_option(
-                '--conf', action='store', dest='conf_path',
+                '-c', '--conf', action='store', dest='conf_path',
                 help='Path to YAML configuration file.')
 
         (options, args) = parser.parse_args()
@@ -26,7 +26,7 @@ class Main(object):
         conf = config.Config(options.conf_path)
 
         alert_time = None
-        queue = Redis(host=conf.host, port=conf.port)
+        queue = Redis(host=conf.redis_host, port=conf.redis_port)
         cls = classifier.Levenshtein(queue)
         alert = alerts.Alert(queue)
         while 1:

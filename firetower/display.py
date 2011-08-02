@@ -1,13 +1,16 @@
 import pprint
 import datetime
 import time
-import redis_util
+from optparse import OptionParser
 
+import config
+from redis_util import Redis
 
 class Display(object):
 
-    def __init__(self):
-        self.r = redis_util.Redis()
+    def __init__(self, conf):
+        self.r = Redis(conf.redis_host, conf.redis_port)
+        self.conf = conf
 
     def dump_data(self, tracked_keys):
         counts = self.r.get_counts(tracked_keys)
@@ -27,7 +30,25 @@ class Display(object):
 
         pprint.pprint(lastlogs)
 
+    def dump_incoming(self):
+        """Display length of incoming queue and its contents."""
+        print 'Incoming queue length: ', self.r.len_incoming(self.conf.queue_key)
+        print self.r.dump_incoming(self.conf.queue_key)
+
 
 def main():
-    display = Display()
-    display.dump_data(['Test Error'])
+    parser = OptionParser(usage='usage: firetower options args')
+    parser.add_option(
+        '-c', '--conf', action='store', dest='conf_path',
+         help='Path to YAML configuration file.')
+
+    (options, args) = parser.parse_args()
+
+    if len(args) > 1:
+        parser.error('Please supply some arguments')
+
+    conf = config.Config(options.conf_path)
+
+    display = Display(conf)
+    #display.dump_data(['Test Error'])
+    display.dump_incoming()

@@ -94,6 +94,14 @@ class Redis(object):
     def push(self, key, value):
         self.conn.lpush(key, value)
 
+    def len_incoming(self, key):
+        """Return the length of the incoming queue."""
+        return self.conn.llen(key)
+
+    def dump_incoming(self, key):
+        """Return the contents of the incoming list."""
+        return self.conn.lrange(key, 0, -1)
+
     def get_counts(self, tracked_keys):
         """
         Return the hgetall for each tracked_key in a list.
