@@ -29,7 +29,8 @@ class Config(object):
         Args:
             conf_str: str, yaml formatted string.
         Returns:
-            output from check_config, a tuple (queue_key, timeslices, alert_time, error_signatures).
+            output from check_config, a tuple (queue_key, timeslices,
+            alert_time, error_signatures).
         """
         return self.check_config(load(conf_str))
 
@@ -37,8 +38,9 @@ class Config(object):
         """Make sure we have expected keys with some value.
 
         Args:
-            conf_dict: a dict which contains all of the configuraiton parameters for
-                alerting and classification. It should look similar to this:
+            conf_dict: a dict which contains all of the configuraiton
+            parameters for alerting and classification. It should
+            look similar to this:
 
                  {'error_signatures': {
                     'Test Error': {
@@ -56,9 +58,11 @@ class Config(object):
         timeslices = conf_dict.get('timeslices', [300])
         alert_time = conf_dict.get('alert_time', 1.0)
 
-        if 'error_signatures' not in conf_dict or not conf_dict['error_signatures']:
+        if 'error_signatures' not in conf_dict or not conf_dict[
+                'error_signatures']:
             raise ErrorSigIssue('No Error Signatures Defined in Conf')
 
         error_signatures = conf_dict['error_signatures']
 
-        return (redis_host, redis_port, queue_key, alert_time, timeslices, error_signatures)
+        return (redis_host, redis_port, queue_key, alert_time,
+                timeslices, error_signatures)

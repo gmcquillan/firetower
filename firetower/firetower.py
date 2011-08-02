@@ -20,9 +20,6 @@ class Main(object):
 
         (options, args) = parser.parse_args()
 
-        if len(args) > 1:
-            parser.error('Please supply some arguments')
-
         conf = config.Config(options.conf_path)
 
         alert_time = None
