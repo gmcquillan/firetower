@@ -1,0 +1,68 @@
+<html>
+    <head>
+        <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.js?1313656006"></script>
+        <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.flot.js?1313656006"></script>
+        <title>Last 5 Minutes</title>
+    </head>
+    <body>
+        Errors per second for category: {{ cat_name }}
+        <div id="placeholder" style="width:1500px;height:300px"></div>
+        <br /><a href="/last_5/">Back to Index</a>
+        <script type="text/javascript">
+            $(function () {
+                var d1 = [
+
+                    {% for item in time_series %}
+                        [{{ item.0 }}, {{ item.1 }}],
+                    {% endfor %}
+                ];
+
+                $.plot(
+                    $("#placeholder"),
+                    [ {data: d1, label: "Errors per second"} ],
+                    {
+                        xaxis: { mode: "time" },
+                        series: {
+                            lines: { show: true },
+                            points: { show: true }
+                        },
+                        grid: { hoverable: true}
+                    }
+               );
+                function showTooltip(x, y, contents) {
+                    $('<div id="tooltip">' + contents + '</div>').css( {
+                        position: 'absolute',
+                        display: 'none',
+                        top: y + 5,
+                        left: x + 5,
+                        border: '1px solid #fdd',
+                        padding: '2px',
+                        'background-color': '#fee',
+                        opacity: 0.80
+                    }).appendTo("body").fadeIn(200);
+                }
+                $("#placeholder").bind("plothover", function (event, pos, item) {
+                    $("#x").text(pos.x.toFixed(2));
+                    $("#y").text(pos.y.toFixed(2));
+
+                    if (item) {
+                        if (previousPoint != item.dataIndex) {
+                            previousPoint = item.dataIndex;
+
+                            $("#tooltip").remove();
+                            var x = item.datapoint[0].toFixed(2),
+                                y = item.datapoint[1].toFixed(2);
+
+                            showTooltip(item.pageX, item.pageY,
+                                        item.series.label + " at " + Date(x) + " = " + y);
+                        }
+                    }
+                    else {
+                        $("#tooltip").remove();
+                        previousPoint = null;
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

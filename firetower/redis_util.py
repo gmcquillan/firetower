@@ -142,8 +142,9 @@ class Redis(object):
         cat_id = self.construct_cat_id(category)
         all_counts = self.conn.hgetall('counter_%s' % (cat_id,))
         if start:
-            for key in all_counts:
-                if key < start or key > end:
+            for key in all_counts.keys():
+                int_key = int(key)
+                if int_key < start or int_key > end:
                     del all_counts[key]
 
         return all_counts

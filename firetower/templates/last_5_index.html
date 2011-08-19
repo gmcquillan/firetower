@@ -1,0 +1,12 @@
+<html>
+    <head><title>Category Index</title>
+    </head>
+    <body>
+        Please select a category:
+        <ul>
+        {% for category in categories %}
+            <li><a href="/last_5/{{ category.0}}">{{category.1}}</a>
+        {% endfor %}
+        </ul>
+    </body>
+</html>
