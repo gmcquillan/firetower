@@ -28,7 +28,7 @@ class Client(object):
         for i in xrange(0, 50):
             try:
                 # Semi-randomly seed the 'sig' key in our fake errors
-                FAKE_DATA['sig'] = random.choice(FAKE_SIGS)
+                FAKE_DATA['sig'] = random.choice(FAKE_SIGS) + str(random.randint(100, 999))
                 print FAKE_DATA
                 encoded = json.dumps(FAKE_DATA)
                 err = queue.push(conf.queue_key, encoded)
