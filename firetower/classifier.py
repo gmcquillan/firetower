@@ -94,7 +94,8 @@ class Levenshtein(Classifier):
             decode_error = json.loads(cat_error)
             cat_sig = decode_error['sig']
             if self.is_similar(cat_sig, sig, 0.7):
-                cat_id = self.redis.construct_cat_id(cat_sig)
+                # Make sure to use consistent category name.
+                cat_id = self.redis.construct_cat_id(cat)
                 self.write_errors(cat_id, error)
                 return True
 
