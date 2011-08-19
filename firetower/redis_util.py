@@ -129,6 +129,26 @@ class Redis(object):
             error_counts[key] = self.conn.hgetall(key)
         return error_counts
 
+    def get_timeseries(self, category, start=None, end=time.time()):
+        """Get some timeseries counts per category.
+
+        Args:
+            category: str, category name.
+            start: int, epoch time to start query from.
+            end: int, epoch time to end query with.
+        Returns:
+            dict, keys are timestamps, and values are counts.
+        """
+        cat_id = self.construct_cat_id(category)
+        all_counts = self.conn.hgetall('counter_%s' % (cat_id,))
+        if start:
+            for key in all_counts:
+                if key < start or key > end:
+                    del all_counts[key]
+
+        return all_counts
+
+
     def sum_timeslice_values(self, error_counts, timeslice, start=None):
         """Return sum of all error instances within time_slice."""
         if not start:
