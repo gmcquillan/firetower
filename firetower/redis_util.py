@@ -6,6 +6,7 @@ the main queue handler for firetower.
 """
 from heapq import heappush, merge
 import json
+import hashlib
 import time
 
 import redis
@@ -75,6 +76,19 @@ class MockRedis(object):
 class Redis(object):
     """Redis - Controls all Firetower interaction with Redis."""
 
+    @staticmethod
+    def construct_cat_id (category):
+        """Create Category ID hash from category name.
+
+        Args:
+            category: str, name of category.
+        Returns:
+            str, sha1 hash.
+        """
+        cat_id = hashlib.sha1()
+        cat_id.update(category)
+        return cat_id.hexdigest()
+
     def __init__(self, host, port):
         """Initialize Redis Connections.
 
@@ -129,20 +143,41 @@ class Redis(object):
                     error_sums[queue] += int(count)
         return error_sums
 
-    def incr_counter(self, root_key):
+    def incr_counter(self, cat_counter_id):
         """Increment normalized count of errors by type."""
-        self.conn.hincrby(root_key.replace(' ', '_'), int(time.time()), 1)
+        self.conn.hincrby(cat_counter_id, int(time.time()), 1)
 
-    def save_error(self, cat, error):
+    def save_error(self, cat_data_id, error):
         """Save JSON encoded string into proper bucket."""
-        error_data_key = cat.replace(' ','_')
         ts = time.time() # our timestamp, needed for uniq
         error['ts'] = ts
-        self.conn.zadd(error_data_key,  json.dumps(error), ts)
+        self.conn.zadd(cat_data_id,  json.dumps(error), ts)
 
     def add_category(self, category):
         """Add category to our sorted set of categories."""
         self.conn.zadd('categories', category, 0)
+        self.add_category_id(self.construct_cat_id(category), category)
+
+    def add_category_id(self, id, category):
+        """Add category ID mapping.
+
+        Args:
+            id: str, hash result of the category name.
+            category: str, the category name.
+        Returns:
+            int, 1 if HSET creates new field, 0 otherwise.
+        """
+        return self.conn.hset('category_ids', id, category)
+
+    def get_category_from_id(self, id):
+        """Return the category name from a hash id.
+
+        Args:
+            id: str, hash id.
+        Returns:
+            str, category name.
+        """
+        return self.conn.hget('category_ids', id)
 
     def get_categories(self):
         """Retrieve the full category set."""
@@ -161,8 +196,10 @@ class Redis(object):
 
     def get_latest_data(self, category):
         """Return list of the most recent json encoded errors for a category."""
+
         print "category: ", category
-        data_key = 'data_%s' % (category,)
+        cat_id = self.construct_cat_id(category) # Lookup by hash id
+        data_key = 'data_%s' % (cat_id,)
         print "data_key: ", data_key
         list_of_errors = self.conn.zrevrange(data_key, 0, 0)
         if list_of_errors:

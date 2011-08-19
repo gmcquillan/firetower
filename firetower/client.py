@@ -8,9 +8,9 @@ from redis_util import Redis
 import tracebacks
 
 FAKE_SIGS = [
-'Test Exception', 'Another Random Error'
+'Test Exception', 'Another Random Error', 'Banannas', 'Toast'
 ]
-FAKE_SIGS = tracebacks.tracebacks
+#FAKE_SIGS = tracebacks.tracebacks
 
 FAKE_DATA = {'hostname': 'testmachine',
              'msg': 'I/O Exception from some file',

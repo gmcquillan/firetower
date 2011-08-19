@@ -62,16 +62,18 @@ class Levenshtein(Classifier):
 
         return False
 
-    def write_errors(self, cat, error):
+    def write_errors(self, cat_id, error):
         """Increment counters, save data.
 
         Args:
-            cat: str, category name.
+            cat_id: str, category id hash.
             error: dict, new payload to save.
         """
-        cat_counter = 'counter_%s' % (cat,)
-        cat_data = 'data_%s' % (cat,)
+        cat_counter = 'counter_%s' % (cat_id,)
+        cat_data = 'data_%s' % (cat_id,)
+        print 'incrementing %s' % (cat_counter,)
         self.redis.incr_counter(cat_counter)
+        print 'saving %s' % (cat_data,)
         self.redis.save_error(cat_data, error)
 
     def check_message(self, cat, error):
@@ -97,12 +99,15 @@ class Levenshtein(Classifier):
             if self.is_similar(cat_sig, sig, 0.7):
                 if cat == unknown:
                     cat = longest_common_substr(cat_sig, sig)
+                    cat_id = self.redis.construct_cat_id(cat)
                     self.redis.add_category(cat)
-                    self.write_errors(cat, decode_error)
-                self.write_errors(cat, error)
-            else:
-                self.redis.add_unknown_error(decode_error) # add unmatched back into unknowns
-                self.redis.add_unknown_error(error)
+                    self.write_errors(cat_id, decode_error)
+                cat_id = self.redis.construct_cat_id(cat)
+                self.write_errors(cat_id, error)
+                break
+            self.redis.add_unknown_error(decode_error) # add unmatched back into unknowns
+        else:
+            self.redis.add_unknown_error(error)
 
     def classify(self, error):
         """Determine which category, if any, a signature belongs to.

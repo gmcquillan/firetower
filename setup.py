@@ -35,5 +35,6 @@ setup(name="Firetower",
 
       install_requires=[
         'redis',
+        'PyYAML',
         ],
       )
