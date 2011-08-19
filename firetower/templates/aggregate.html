@@ -1,0 +1,44 @@
+<html>
+    <head>
+        <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.js?1313656006"></script>
+        <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.flot.js?1313656006"></script>
+        <title>Totals from the last 5 minutes</title>
+    </head>
+    <body>
+        Errors per second for category: {{ cat_name }}
+        <div id="placeholder" style="width:1500px;height:300px"></div>
+        <br />
+        <table>
+            {% for total in totals %}
+            <tr><td>{{total.1}}</td><td>{{total.2}}</td></tr>
+            {% endfor %}
+        </table>
+
+
+        <script type="text/javascript">
+            $(function () {
+                {% for total in totals %}
+                var data_{{total.0}} = [
+                    [{{ loop.index }}, {{total.2}}]
+                ];
+                {% endfor %}
+
+                $.plot(
+                    $("#placeholder"),
+
+                    [
+                        {% for total in totals %}
+                        {data: data_{{total.0}}, label: '{{total.1}}' },
+                        {% endfor %}
+                    ],
+                    {
+                        xaxis: { mode: "time" },
+                        series: {
+                            bars: { show: true },
+                        },
+                    }
+               );
+            });
+        </script>
+    </body>
+</html>
