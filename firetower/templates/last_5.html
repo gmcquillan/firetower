@@ -1,11 +1,8 @@
-<html>
-    <head>
-        <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.js?1313656006"></script>
-        <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.flot.js?1313656006"></script>
-        <title>Last 5 Minutes</title>
-    </head>
-    <body>
-        Errors per second for category: {{ cat_name }}
+        {% extends "base.html"  %}
+        {% block title %}
+           <h1> Firetower - Errors per second for category: {{ cat_name }} </h1>
+        {% endblock %}
+        {% block content %}
         <div id="placeholder" style="width:1500px;height:300px"></div>
         <br /><a href="/last_5/">Back to Index</a>
         <script type="text/javascript">
@@ -64,5 +61,4 @@
                 });
             });
         </script>
-    </body>
-</html>
+        {% endblock %}

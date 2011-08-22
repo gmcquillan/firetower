@@ -1,12 +1,9 @@
-<html>
-    <head>
-        <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.js?1313656006"></script>
-        <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.flot.js?1313656006"></script>
-        <title>Totals from the last 5 minutes</title>
-    </head>
-    <body>
-        Errors per second for category: {{ cat_name }}
-        <div id="placeholder" style="width:1500px;height:300px"></div>
+        {% extends "base.html"  %}
+        {% block title %}
+            <h1> Firetower - Total Errors per Category </h1>
+        {% endblock %}
+        {% block content %}
+        <div id="placeholder" style="width:700px;height:300px"></div>
         <br />
         <table>
             {% for total in totals %}
@@ -40,5 +37,4 @@
                );
             });
         </script>
-    </body>
-</html>
+        {% endblock %}

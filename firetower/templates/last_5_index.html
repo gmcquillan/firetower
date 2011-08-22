@@ -1,11 +1,10 @@
-<html>
-    <head>
-        <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.js?1313656006"></script>
-        <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.flot.js?1313656006"></script>
-        <title>Last 5 Minutes Aggregate</title>
-    </head>
-    <body>
-        <div id="placeholder" style="width:1500px;height:300px"></div>
+        {% extends "base.html" %}
+        {% block title %}
+            <h1> Firetower - Last Five Minute Aggregate </h1>
+        {% endblock %}
+        
+        {% block content %}
+        <div id="placeholder" style="width:1400px;height:300px"></div>
 
             <script type="text/javascript">
             $(function () {
@@ -69,12 +68,14 @@
             });
         </script>
             <br />
-
-        Please select a category:
-        <ul>
-        {% for category in categories %}
-            <li><a href="/last_5/{{ category.0}}">{{category.1}}</a>
-        {% endfor %}
-        </ul>
-    </body>
-</html>
+        <div id=categories>
+            <p>
+                Please select a category:
+                <ul>
+                {% for category in categories %}
+                    <li><a href="/last_5/{{ category.0}}">{{category.1}}</a>
+                {% endfor %}
+                </ul>
+            </p>
+        </div>
+        {% endblock %}
