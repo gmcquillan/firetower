@@ -9,3 +9,4 @@ build/
 pip-log.txt
 Firetower.egg-info/*
 firetowker.komodoproject
+*.DS_Store
