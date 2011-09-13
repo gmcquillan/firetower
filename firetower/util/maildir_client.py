@@ -7,6 +7,12 @@ from optparse import OptionParser
 from firetower import config
 from firetower.redis_util import Redis
 
+"""maildir_client
+
+This is a module designed at allowing you to bootstrap your
+firetower data by importing error emails from a maildir format.
+"""
+
 def main():
     parser = OptionParser(usage='usage: firetower options args')
     parser.add_option(
