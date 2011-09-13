@@ -36,8 +36,9 @@ def main():
         ft_dict['date'] = message.get_date()
         ft_dict['programname'] = 'Maildir Util'
 
-        queue.push(conf.queue_key, json.dumps(ft_dict))
-        print ft_dict
+        # We don't huge signatures clogging the classification
+        if len(ft_dict['sig']) < 10000:
+            queue.push(conf.queue_key, json.dumps(ft_dict))
 
 if __name__ == '__main__':
     main()
