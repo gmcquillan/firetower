@@ -37,7 +37,7 @@ def main():
         ft_dict['programname'] = 'Maildir Util'
 
         # We don't huge signatures clogging the classification
-        if len(ft_dict['sig']) < 10000:
+        if len(ft_dict['sig']) < 10000 and isinstance(ft_dict['sig'], str):
             queue.push(conf.queue_key, json.dumps(ft_dict))
 
 if __name__ == '__main__':
