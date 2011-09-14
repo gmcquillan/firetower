@@ -25,6 +25,11 @@ class MockRedis(object):
         rhash[sub_key] = value + default
         self.data[root_key] = rhash
 
+    def hset(self, root_key, sub_key, value):
+        rhash = self.data.get(root_key, {})
+        rhash[sub_key] = value
+        self.data[root_key] = rhash
+
     def keys(self):
         return self.data.keys()
 
@@ -77,7 +82,7 @@ class Redis(object):
     """Redis - Controls all Firetower interaction with Redis."""
 
     @staticmethod
-    def construct_cat_id (category):
+    def construct_cat_id(category):
         """Create Category ID hash from category name.
 
         Args:
@@ -218,10 +223,8 @@ class Redis(object):
     def get_latest_data(self, category):
         """Return list of the most recent json encoded errors for a category."""
 
-        print "category: ", category
         cat_id = self.construct_cat_id(category) # Lookup by hash id
         data_key = 'data_%s' % (cat_id,)
-        print "data_key: ", data_key
         list_of_errors = self.conn.zrevrange(data_key, 0, 0)
         if list_of_errors:
             return list_of_errors

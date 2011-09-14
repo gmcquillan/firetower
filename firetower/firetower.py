@@ -37,7 +37,7 @@ class Main(object):
                 alert_time = datetime.timedelta(minutes=conf.alert_time) + now
             if err:
                 parsed = json.loads(err)
-                cls.classify(parsed)
+                cls.classify(parsed, conf.class_thresh)
             else:
                 time.sleep(1)
 

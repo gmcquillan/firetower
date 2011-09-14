@@ -71,17 +71,17 @@ class Levenshtein(Classifier):
         """
         cat_counter = 'counter_%s' % (cat_id,)
         cat_data = 'data_%s' % (cat_id,)
-        print 'incrementing %s' % (cat_counter,)
         self.redis.incr_counter(cat_counter)
-        print 'saving %s' % (cat_data,)
         self.redis.save_error(cat_data, error)
 
-    def check_message(self, cat, error):
+    def check_message(self, cat, error, thresh):
         """Compare error with messages from a category.
 
         Args:
-            cat: str, keyname of a category (maybe unknown_errors)
-            error: dict, error message we're processing
+            cat: tuplel, containing an id and a category name.
+                 Example: (0, 'Test Error')
+            error: dict, error message we're processing.
+            thresh: float, the ratio of similarity needed to match.
         """
         sig = error['sig']
 
@@ -93,27 +93,27 @@ class Levenshtein(Classifier):
                 continue
             decode_error = json.loads(cat_error)
             cat_sig = decode_error['sig']
-            if self.is_similar(cat_sig, sig, 0.7):
+            if self.is_similar(cat_sig, sig, thresh):
                 # Make sure to use consistent category name.
                 cat_id = self.redis.construct_cat_id(cat)
                 self.write_errors(cat_id, error)
                 return True
 
-    def classify(self, error):
+    def classify(self, error, thresh):
         """Determine which category, if any, a signature belongs to.
 
-        If it doesn't find a match, then it'll save the error into an
-        'unknown' list of errors, which subsequent errors are checked against.
-        When a match is found between a new errors and one of the unknown errors
-        a new category is created.
+        If it doesn't find a match, then it'll save the error into a new
+        category, which subsequent errors are checked against.
 
         Args:
             error: dict of json payload with a 'sig' key.
+            thresh: float, classification threshold to match.
         """
-        categories = self.redis.get_categories()
+        categories = (cat[1] for cat in self.redis.get_categories())
+        print categories
         # Let's see if our message matches a category
         for cat in categories:
-            if self.check_message(cat, error):
+            if self.check_message(cat, error, thresh):
                 break
         else:
             cat_sig = error['sig']
