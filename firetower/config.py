@@ -20,7 +20,7 @@ class Config(object):
     def __init__(self, conf_file):
         self.conf_path = conf_file
         self.redis_host, self.redis_port, self.queue_key, self.alert_time,  \
-        self.timeslices, self.error_signatures = \
+        self.class_thresh, self.timeslices, self.error_signatures = \
                 self.load_conf(file(self.conf_path, 'r'))
 
     def load_conf(self, conf_str):
@@ -55,6 +55,7 @@ class Config(object):
         redis_host = conf_dict.get('redis_host', 'localhost')
         redis_port = conf_dict.get('redis_port', 6379)
         queue_key = conf_dict.get('queue_key', 'incoming')
+        class_thresh = conf_dict.get('class_thresh', 0.5)
         timeslices = conf_dict.get('timeslices', [300])
         alert_time = conf_dict.get('alert_time', 1.0)
 
@@ -65,4 +66,4 @@ class Config(object):
         error_signatures = conf_dict['error_signatures']
 
         return (redis_host, redis_port, queue_key, alert_time,
-                timeslices, error_signatures)
+                class_thresh, timeslices, error_signatures)
