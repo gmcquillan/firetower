@@ -9,7 +9,7 @@ redis_port: 6379
 # Queue source for classification
 queue_key: incoming
 
-class_thresh: 0.2
+class_thresh: 0.4
 
 # Time Between Alert Checks
 
