@@ -49,15 +49,13 @@ class Levenshtein(Classifier):
 
     def str_ratio(self, golden, test_str):
         """Return the ratio of similarity between two strings; ignore spaces."""
-        return difflib.SequenceMatcher(None, golden, test_str).ratio()
+        return difflib.SequenceMatcher(None, golden, test_str).real_quick_ratio()
 
     def is_similar(self, golden, test_str, thresh):
         """Returns True if similarity is larger than thresh."""
 
         ratio = self.str_ratio(golden, test_str)
         if ratio > thresh:
-            print "%s: %s matches %s with a %.1f ratio" % (
-                    str(datetime.datetime.now()), test_str, golden, ratio)
             return True
 
         return False
@@ -109,10 +107,10 @@ class Levenshtein(Classifier):
             error: dict of json payload with a 'sig' key.
             thresh: float, classification threshold to match.
         """
-        categories = (cat[1] for cat in self.redis.get_categories())
-        print categories
+        categories = (cat for cat in self.redis.get_categories())
         # Let's see if our message matches a category
         for cat in categories:
+            #print cat
             if self.check_message(cat, error, thresh):
                 break
         else:
