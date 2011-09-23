@@ -77,5 +77,5 @@ def aggregate():
     return render_template(
         "aggregate.html", totals = totals)
 
-if __name__ == "__main__":
+def main():
     app.run(debug=True, use_evalex=False)

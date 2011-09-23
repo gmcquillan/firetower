@@ -30,6 +30,7 @@ setup(name="Firetower",
             'firetower-server=firetower.firetower:main',
             'firetower-display=firetower.display:main',
             'firetower-client=firetower.client:main',
+            'firetower-web=firetower.firetower_web:main',
             ],
         },
 
