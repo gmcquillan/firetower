@@ -1,3 +1,6 @@
+from calendar import timegm
+
+import datetime
 import time
 
 from flask import Flask, render_template
@@ -7,9 +10,10 @@ import redis_util
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
 
-end = 1313792842 + 300
-
 app = Flask(__name__)
+
+def timestamp(dttm):
+        return timegm(dttm.utctimetuple())
 
 @app.route("/")
 def root():
@@ -21,17 +25,18 @@ def root():
 
     return "<ul>%s</ul>" % "\n".join(lines)
 
-@app.route("/last_5/")
-def last_5():
+@app.route("/default/")
+def default():
     redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
     cat_dict = redis.conn.hgetall("category_ids")
 
-    start = end - 300
+    end = datetime.datetime.now()
+    start = end - datetime.timedelta(hours=1)
 
     results = []
     for cat_id in cat_dict:
         cat = cat_dict[cat_id]
-        time_series = redis.get_timeseries(cat, start, end)
+        time_series = redis.get_timeseries(cat, timestamp(start), timestamp(end))
         items = [(int(x)*1000, int(y)) for x,y in time_series.items()]
         items.sort(lambda x,y: cmp(x[0], y[0]))
         results.append(
@@ -41,19 +46,6 @@ def last_5():
     return render_template(
         "last_5_index.html", categories = cat_dict.items(), results = results
     )
-
-@app.route("/last_5/<category_id>")
-def cat_last_5(category_id):
-    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
-    cat_dict = redis.conn.hgetall("category_ids")
-    cat = cat_dict[category_id]
-
-    start = end - 300
-    time_series = redis.get_timeseries(cat, start, end)
-    items = [(int(x)*1000, int(y)) for x,y in time_series.items()]
-    items.sort(lambda x,y: cmp(x[0], y[0]))
-    return render_template(
-        "last_5.html", time_series = items, cat_name = cat)
 
 @app.route("/aggregate")
 def aggregate():
@@ -78,4 +70,4 @@ def aggregate():
         "aggregate.html", totals = totals)
 
 def main():
-    app.run(debug=True, use_evalex=False)
+    app.run(debug=True, use_evalex=False, host='0.0.0.0')

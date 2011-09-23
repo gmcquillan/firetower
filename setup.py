@@ -35,6 +35,7 @@ setup(name="Firetower",
         },
 
       install_requires=[
+        'flask',
         'redis',
         'PyYAML',
         ],
