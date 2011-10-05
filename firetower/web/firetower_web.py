@@ -5,7 +5,7 @@ import time
 
 from flask import Flask, render_template
 
-import redis_util
+from firetower import  redis_util
 
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
