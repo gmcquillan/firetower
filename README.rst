@@ -65,11 +65,12 @@ Running the Demo:
 
 - Turn on the firetower-client:
 ::
-cd firetower
-. bin/activate
-firetower-client -c configs/config.yaml
-# This should be spitting out JSON to Stdout like this:
-# {'severity': None, 'hostname': 'testmachine', 'syslogtag': 'test', 'sig': 'ToastToast519', 'programname': 'firetower client', 'msg': 'I/O Exception from some file', 'logfacility': 'local1'}
+
+    cd firetower
+    . bin/activate
+    firetower-client -c configs/config.yaml
+    # This should be spitting out JSON to Stdout like this:
+    # {'severity': None, 'hostname': 'testmachine', 'syslogtag': 'test', 'sig': 'ToastToast519', 'programname': 'firetower client', 'msg': 'I/O Exception from some file', 'logfacility': 'local1'}
 
 - Turn on the firetower-server:
 ::
