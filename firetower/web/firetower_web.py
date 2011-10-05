@@ -52,6 +52,7 @@ def aggregate():
     redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
     cat_dict = redis.conn.hgetall("category_ids")
 
+    end = time.time()
     start = end - 300
 
     error_totals = {}
