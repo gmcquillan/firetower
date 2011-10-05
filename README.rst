@@ -73,16 +73,18 @@ firetower-client -c configs/config.yaml
 
 - Turn on the firetower-server:
 ::
-cd firetower
-. bin/activate
-firetower-server -c configs/config.yaml
-# This will start the classification there will be no output.
+
+    cd firetower
+    . bin/activate
+    firetower-server -c configs/config.yaml
+    # This will start the classification there will be no output.
 
 - Turn on the web frontend:
 ::
-cd firetower
-. bin/activate
-firetower-web
+
+    cd firetower
+    . bin/activate
+    firetower-web
 
 - Browse to http://localhost:5000 to see what kind of data is being produced.
 
