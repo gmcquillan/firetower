@@ -1,5 +1,5 @@
 import random
-import simplejson as json
+import json
 import textwrap
 import time
 from optparse import OptionParser
