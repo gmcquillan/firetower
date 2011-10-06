@@ -10,6 +10,7 @@ from firetower import  redis_util
 
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
+REDIS = redis_util.Redis(REDIS_HOST, REDIS_PORT)
 
 app = Flask(__name__)
 
@@ -19,8 +20,7 @@ def timestamp(dttm):
 @app.route("/")
 def root():
     lines = []
-    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
-    categories = redis.get_categories()
+    categories = REDIS.get_categories()
     for cat in categories:
         lines.append("<li>%s</li>" % cat)
 
@@ -28,8 +28,7 @@ def root():
 
 @app.route("/default/")
 def default():
-    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
-    cat_dict = redis.conn.hgetall("category_ids")
+    cat_dict = REDIS.conn.hgetall("category_ids")
 
     end = datetime.datetime.now()
     start = end - datetime.timedelta(hours=1)
@@ -37,7 +36,7 @@ def default():
     results = []
     for cat_id in cat_dict:
         cat = cat_dict[cat_id]
-        time_series = redis.get_timeseries(cat, timestamp(start), timestamp(end))
+        time_series = REDIS.get_timeseries(cat, timestamp(start), timestamp(end))
         items = [(int(x)*1000, int(y)) for x,y in time_series.items()]
         items.sort(lambda x,y: cmp(x[0], y[0]))
         results.append(
@@ -50,15 +49,15 @@ def default():
 
 @app.route("/aggregate")
 def aggregate():
-    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
-    cat_dict = redis.conn.hgetall("category_ids")   
+    cat_dict = REDIS.conn.hgetall("category_ids")
+
     end = time.time()
     start = end - 300
 
     error_totals = {}
     for cat_id in cat_dict:
         cat = cat_dict[cat_id]
-        time_series = redis.get_timeseries(cat, start, end)
+        time_series = REDIS.get_timeseries(cat, start, end)
         for time_point in time_series:
             error_totals[cat_id] = error_totals.get(cat_id, 0) + int(time_point[1])
 

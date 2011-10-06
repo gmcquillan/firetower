@@ -61,11 +61,43 @@ Make sure that your redis server is running on your local machine on the default
 
 
 Running the Demo:
-If you want to populate data into the Redis queue, just run the client_example.py. It will populate 10k
-fake errors into the queue (with one of four random signatures).
 
-Then, if you want to run the aggregator/classifcation daemon, run firetower.py. It will pull data out of the 'incoming' redis key, classify it, and
-write normalized count data into a key named after the error signature you're tracking.
+
+- Turn on the firetower-client:
+::
+
+    cd firetower
+    . bin/activate
+    firetower-client -c configs/config.yaml
+    # This should be spitting out JSON to Stdout like this:
+    # {'severity': None, 'hostname': 'testmachine', 'syslogtag': 'test', 'sig': 'ToastToast519', 'programname': 'firetower client', 'msg': 'I/O Exception from some file', 'logfacility': 'local1'}
+
+- Turn on the firetower-server:
+::
+
+    cd firetower
+    . bin/activate
+    firetower-server -c configs/config.yaml
+    # This will start the classification there will be no output.
+
+- Turn on the web frontend:
+::
+
+    cd firetower
+    . bin/activate
+    firetower-web
+
+- Browse to http://localhost:5000 to see what kind of data is being produced.
+
+- To remove your test data (don't do this on a redis server where you have *ANY* data you care about):
+::
+
+    ipython
+    >>> import redis
+    >>> conn = redis.Redis()
+    >>> conn.flushdb()
+
+
 
 Running Tests
 -------------
@@ -75,7 +107,7 @@ Make sure that you have nosetests installed:
 
 ::
 
-    pip install nosetests
+    pip install nose
 
 ::
 
