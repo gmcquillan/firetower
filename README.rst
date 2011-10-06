@@ -89,7 +89,7 @@ Running the Demo:
 
 - Browse to http://localhost:5000 to see what kind of data is being produced.
 
-- To remove your test data (don't do this on a redis server where you have *ANY* data you care about:
+- To remove your test data (don't do this on a redis server where you have *ANY* data you care about):
 ::
 
     ipython
