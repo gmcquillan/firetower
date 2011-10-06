@@ -50,6 +50,7 @@ def default():
 def aggregate():
     cat_dict = REDIS.conn.hgetall("category_ids")
 
+    end = time.time()
     start = end - 300
 
     error_totals = {}

@@ -107,7 +107,7 @@ Make sure that you have nosetests installed:
 
 ::
 
-    pip install nosetests
+    pip install nose
 
 ::
 
