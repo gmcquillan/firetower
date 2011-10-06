@@ -3,6 +3,7 @@ from calendar import timegm
 import datetime
 import time
 
+import flask
 from flask import Flask, render_template
 
 from firetower import  redis_util
@@ -50,8 +51,8 @@ def default():
 @app.route("/aggregate")
 def aggregate():
     redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
-    cat_dict = redis.conn.hgetall("category_ids")
-
+    cat_dict = redis.conn.hgetall("category_ids")   
+    end = time.time()
     start = end - 300
 
     error_totals = {}
@@ -68,6 +69,20 @@ def aggregate():
 
     return render_template(
         "aggregate.html", totals = totals)
+
+@app.route("/api/categories/<category_id>")
+def category_api(category_id):
+    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
+    cat_dict = redis.conn.hgetall("category_ids")   
+    category = cat_dict[category_id]
+
+    end = flask.request.args.get('end', time.time())
+    start = flask.request.args.get('start', end-300)
+
+    error_totals = {}
+    time_series = redis.get_timeseries(category, start, end)
+    
+    return flask.jsonify(time_series)
 
 def main():
     app.run(debug=True, use_evalex=False, host='0.0.0.0')

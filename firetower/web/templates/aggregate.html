@@ -14,6 +14,14 @@
 
         <script type="text/javascript">
             $(function () {
+				// Add start/end tags at end of url here
+				var handler = $.ajax({
+					url: "/api/categories/e6ecf4b3344bbe767200276b929ab76d1c7ff139",
+					success: function(jsonData, httpStatus, xhr){
+						console.log(jsonData)
+					}
+				});
+	
                 {% for total in totals %}
                 var data_{{total.0}} = [
                     [{{ loop.index }}, {{total.2}}]
