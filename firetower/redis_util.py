@@ -191,9 +191,20 @@ class Redis(object):
             id: str, hash result of the category name.
             category: str, the category name.
         Returns:
-            int, 1 if HSET creates new field, 0 otherwise.
+            bool, True if HSET created the new fields, False otherwise.
         """
-        return self.conn.hset('category_ids', id, category)
+        cat_fields = (
+            ("category", category), ("verbose_name", id), ("threshold", "")
+        )
+        ret = []
+
+        # TODO: Need a more elegant way to deal with rolling back from mid
+        # batch field creation failure
+        for key, value in cat_fields:
+            ret.append(
+                self.conn.hset('category_ids', "%s:%s" %(id, key), value)
+            )
+        return all(ret)
 
     def get_category_from_id(self, id):
         """Return the category name from a hash id.
@@ -203,7 +214,17 @@ class Redis(object):
         Returns:
             str, category name.
         """
-        return self.conn.hget('category_ids', id)
+        return self.conn.hget('category_ids', "%s:category" %(id))
+
+    def get_threshold_from_id(self, id):
+        """Return the threshold from a hash id.
+
+        Args:
+            id: str, hash id.
+        Returns:
+            int, category threshold
+        """
+        return self.conn.hget('category_ids', "%s:threshold" %(id))
 
     def get_categories(self):
         """Retrieve the full category set."""

@@ -72,7 +72,7 @@ class Levenshtein(Classifier):
         self.redis.incr_counter(cat_counter)
         self.redis.save_error(cat_data, error)
 
-    def check_message(self, cat, error, thresh):
+    def check_message(self, cat, error, default_thresh):
         """Compare error with messages from a category.
 
         Args:
@@ -84,6 +84,11 @@ class Levenshtein(Classifier):
         sig = error['sig']
 
         cat_errors = self.redis.get_latest_data(cat)
+        cat_id = self.redis.construct_cat_id(cat)
+
+        custom_thresh = self.redis.get_threshold_from_id(cat_id)
+        thresh = custom_thresh if custom_thresh else default_thresh
+
         if not cat_errors:
             return None
         for cat_error in cat_errors:
@@ -110,7 +115,6 @@ class Levenshtein(Classifier):
         categories = (cat for cat in self.redis.get_categories())
         # Let's see if our message matches a category
         for cat in categories:
-            #print cat
             if self.check_message(cat, error, thresh):
                 break
         else:
