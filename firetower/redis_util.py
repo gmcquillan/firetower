@@ -185,7 +185,16 @@ class Redis(object):
         self.add_category_id(self.construct_cat_id(category), category)
 
     def add_category_id(self, id, category):
-        """Add category ID mapping.
+        """Adds category metadata.
+
+        This method will set 3 metadata fields for the category hash:
+        * category is the full text of the original cateory.
+        * verbose_name is the human readable name for this category (used for
+            display purposes)
+        * threshold is the custom threshold for this category
+
+        The key values are in the form {category_hash}:{metadata_name} e.g.
+        a909ede39c09d84ed1839c5ca0f9b9876113770b:category
 
         Args:
             id: str, hash result of the category name.
@@ -224,7 +233,17 @@ class Redis(object):
         Returns:
             int, category threshold
         """
-        return self.conn.hget('category_ids', "%s:threshold" %(id))
+        thresh_str = self.conn.hget('category_ids', "%s:threshold" %(id))
+        if not thresh_str:
+            return None
+
+        try:
+            thresh = int(thresh_str)
+        except ValueError as e:
+            # TODO: Need some error handling/logging
+            raise e
+        else:
+            return thresh
 
     def get_categories(self):
         """Retrieve the full category set."""

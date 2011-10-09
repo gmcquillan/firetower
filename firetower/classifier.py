@@ -87,7 +87,7 @@ class Levenshtein(Classifier):
         cat_id = self.redis.construct_cat_id(cat)
 
         custom_thresh = self.redis.get_threshold_from_id(cat_id)
-        thresh = custom_thresh if custom_thresh else default_thresh
+        thresh = custom_thresh if custom_thresh is not None else default_thresh
 
         if not cat_errors:
             return None
