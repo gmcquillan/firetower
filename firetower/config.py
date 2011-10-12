@@ -20,7 +20,7 @@ class Config(object):
     def __init__(self, conf_file):
         self.conf_path = conf_file
         self.redis_host, self.redis_port, self.queue_key, self.alert_time,  \
-        self.class_thresh, self.timeslices, self.error_signatures = \
+        self.class_thresh, self.timeslices = \
                 self.load_conf(file(self.conf_path, 'r'))
 
     def load_conf(self, conf_str):
@@ -42,10 +42,9 @@ class Config(object):
             parameters for alerting and classification. It should
             look similar to this:
 
-                 {'error_signatures': {
-                    'Test Error': {
-                        'alert_thresholds': {'high': 1000},
-                        'signatures': {'sig': 'Test Error','threshold': 0.5}}},
+                { 'redis_host: localhost,
+                  'redis_port: 6379,
+                  'class_thresh: 0.7,
                   'alert_time': 0.5,
                   'queue_key': 'incoming',
                   'timeslices': [300]}
@@ -59,11 +58,5 @@ class Config(object):
         timeslices = conf_dict.get('timeslices', [300])
         alert_time = conf_dict.get('alert_time', 1.0)
 
-        if 'error_signatures' not in conf_dict or not conf_dict[
-                'error_signatures']:
-            raise ErrorSigIssue('No Error Signatures Defined in Conf')
-
-        error_signatures = conf_dict['error_signatures']
-
         return (redis_host, redis_port, queue_key, alert_time,
-                class_thresh, timeslices, error_signatures)
+                class_thresh, timeslices)

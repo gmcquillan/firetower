@@ -19,20 +19,3 @@ alert_time: 0.5
 
 timeslices:
   - 300  # Look 5 minutes into the past for threshold checks
-
-# These are the things we'll be matching against
-
-error_signatures:
-  Test Error:
-    signatures:
-      sig:
-        Test Error
-      threshold:
-        0.5
-    alert_thresholds:
-      high:
-        1000
-      med:
-        100
-      low:
-        10
