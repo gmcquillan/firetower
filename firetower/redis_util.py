@@ -25,6 +25,9 @@ class MockRedis(object):
         rhash[sub_key] = value + default
         self.data[root_key] = rhash
 
+    def hget(self, root_key, sub_key):
+        return self.data[root_key][sub_key]
+
     def hset(self, root_key, sub_key, value):
         rhash = self.data.get(root_key, {})
         rhash[sub_key] = value
@@ -238,7 +241,7 @@ class Redis(object):
             return None
 
         try:
-            thresh = int(thresh_str)
+            thresh = float(thresh_str)
         except ValueError as e:
             # TODO: Need some error handling/logging
             raise e
