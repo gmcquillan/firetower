@@ -27,6 +27,7 @@ class Main(object):
         queue = Redis(host=conf.redis_host, port=conf.redis_port)
         cls = classifier.Levenshtein(queue)
         alert = alerts.Alert(queue)
+        last_archive = datetime.datetime.now()
         while 1:
             now = datetime.datetime.now()
             err = queue.pop(conf.queue_key)
@@ -35,6 +36,11 @@ class Main(object):
             elif alert_time < now:
                 alert.check(conf.error_signatures, conf.timeslices)
                 alert_time = datetime.timedelta(minutes=conf.alert_time) + now
+            if last_archive < now - datetime.timedelta(seconds=conf.archive_time):
+                # TODO(niall): Get category objects
+                for category in categories:
+                    queue.archive_cat_counts(category, last_archive)
+                last_archive = now
             if err:
                 parsed = json.loads(err)
                 cls.classify(parsed, conf.class_thresh)

@@ -271,3 +271,24 @@ class Redis(object):
         list_of_errors = self.conn.zrevrange(data_key, 0, 0)
         if list_of_errors:
             return list_of_errors
+
+    def archive_cat_counts(self, category, start_time):
+        """Move everything before start_time into a Sorted Set.
+
+        Args:
+            category: str, name of category.
+            start_time: int, epoch time.
+        """
+        cat_id = self.construct_cat_id(category)
+        ts_key = 'ts_%s' % (cat_id,)
+        counter_key = 'counter_%s' % (cat_id,))
+        counts = self.conn.hgetall(counter_key)
+        counters_to_delete = []
+        for ts in counts:
+            if int(ts) < start_time:
+                self.conn.zadd(ts_key, ts, counts[ts])
+                counters_to_delete.append(ts)
+
+        # Remove the counters from the 'counter' key.
+        # We store longterm counters in the timeseries key (ts).
+        self.conn.hdel(counter_key, *counters_to_delete)
