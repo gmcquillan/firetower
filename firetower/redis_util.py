@@ -4,6 +4,7 @@ redis_util
 
 the main queue handler for firetower.
 """
+import calendar
 from heapq import heappush, merge
 import json
 import hashlib
@@ -12,6 +13,7 @@ import time
 import redis
 from redis.exceptions import ConnectionError
 
+import category
 
 class MockRedis(object):
     data = {}
@@ -182,41 +184,9 @@ class Redis(object):
         error['ts'] = ts
         self.conn.zadd(cat_data_id,  json.dumps(error), ts)
 
-    def add_category(self, category):
+    def add_category(self, signature):
         """Add category to our sorted set of categories."""
-        self.conn.zadd('categories', category, 0)
-        self.add_category_id(self.construct_cat_id(category), category)
-
-    def add_category_id(self, id, category):
-        """Adds category metadata.
-
-        This method will set 3 metadata fields for the category hash:
-        * category is the full text of the original cateory.
-        * verbose_name is the human readable name for this category (used for
-            display purposes)
-        * threshold is the custom threshold for this category
-
-        The key values are in the form {category_hash}:{metadata_name} e.g.
-        a909ede39c09d84ed1839c5ca0f9b9876113770b:category
-
-        Args:
-            id: str, hash result of the category name.
-            category: str, the category name.
-        Returns:
-            bool, True if HSET created the new fields, False otherwise.
-        """
-        cat_fields = (
-            ("category", category), ("verbose_name", id), ("threshold", "")
-        )
-        ret = []
-
-        # TODO: Need a more elegant way to deal with rolling back from mid
-        # batch field creation failure
-        for key, value in cat_fields:
-            ret.append(
-                self.conn.hset('category_ids', "%s:%s" %(id, key), value)
-            )
-        return all(ret)
+        c = category.Category.create(self.conn, signature)
 
     def get_category_from_id(self, id):
         """Return the category name from a hash id.
@@ -248,6 +218,10 @@ class Redis(object):
         else:
             return thresh
 
+    def get_verbose_name_from_id(self, id):
+        verbose_name = self.conn.hget("category_ids", )
+
+
     def get_categories(self):
         """Retrieve the full category set."""
         return self.conn.zrange('categories', 0, -1)
@@ -272,23 +246,25 @@ class Redis(object):
         if list_of_errors:
             return list_of_errors
 
-    def archive_cat_counts(self, category, start_time):
+    def archive_cat_counts(self, cat_id, start_time):
         """Move everything before start_time into a Sorted Set.
 
         Args:
             category: str, name of category.
             start_time: int, epoch time.
         """
-        cat_id = self.construct_cat_id(category)
+        start_time = calendar.timegm(start_time.timetuple())
+
         ts_key = 'ts_%s' % (cat_id,)
-        counter_key = 'counter_%s' % (cat_id,))
+        counter_key = 'counter_%s' % (cat_id,)
         counts = self.conn.hgetall(counter_key)
         counters_to_delete = []
         for ts in counts:
             if int(ts) < start_time:
-                self.conn.zadd(ts_key, ts, counts[ts])
+                self.conn.zadd(ts_key, counts[ts], ts)
                 counters_to_delete.append(ts)
 
         # Remove the counters from the 'counter' key.
         # We store longterm counters in the timeseries key (ts).
-        self.conn.hdel(counter_key, *counters_to_delete)
+        for counter in counters_to_delete:
+            self.conn.hdel(counter_key, counter)

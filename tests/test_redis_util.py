@@ -1,13 +1,12 @@
 from unittest import TestCase
 
-from firetower.redis_util import MockRedis
-from firetower.redis_util import Redis
+from firetower import redis_util
 
 
 class TestMockRedis(TestCase):
 
     def setUp(self):
-        self.r = MockRedis()
+        self.r = redis_util.MockRedis()
         self.r.zadd('myzlist', 'one', 1)
         self.r.zadd('myzlist', 'two', 2)
         self.r.zadd('myzlist', 'three', 3)
@@ -32,8 +31,8 @@ class TestMockRedis(TestCase):
 class TestRedisUtil(TestCase):
 
     def setUp(self):
-        self.r = MockRedis()
-        self.r_util = Redis('localhost', 6300)
+        self.r = redis_util.MockRedis()
+        self.r_util = redis_util.Redis('localhost', 6300)
         self.r.lpush('test_key', 'something worth keeping')
 
     def tearDown(self):
@@ -58,13 +57,10 @@ class TestRedisUtil(TestCase):
         cat_str = "Test category"
         cat_id = self.r_util.construct_cat_id(cat_str)
         self.r_util.add_category(cat_str)
-        self.assertEqual(
-            self.r_util.get_category_from_id(cat_id),
-            cat_str,
-        )
-        self.assertTrue(
-            self.r_util.get_threshold_from_id(cat_id) is None
-        )
+        c = redis_util.Category(self.r_util.conn, cat_str)
+        self.assertEqual(c.signature, cat_str)
+        self.assertTrue(c.threshold is None)
+
 
     def test_getting_cat_threshold(self):
         cat_id = "cat_id"

@@ -22,4 +22,4 @@ timeslices:
 
 # Number of seconds between archive sweeps for counters in Redis
 
-archive_time: 5
+archive_time: 2

@@ -8,6 +8,7 @@ from optparse import OptionParser
 import alerts
 import config
 import classifier
+import category
 from redis_util import Redis
 
 class Main(object):
@@ -27,19 +28,13 @@ class Main(object):
         queue = Redis(host=conf.redis_host, port=conf.redis_port)
         cls = classifier.Levenshtein(queue)
         alert = alerts.Alert(queue)
-        last_archive = datetime.datetime.now()
+        last_archive = datetime.datetime.utcnow()
         while 1:
-            now = datetime.datetime.now()
+            now = datetime.datetime.utcnow()
             err = queue.pop(conf.queue_key)
-            if not alert_time:
-                alert_time = datetime.timedelta(minutes=conf.alert_time) + now
-            elif alert_time < now:
-                alert.check(conf.error_signatures, conf.timeslices)
-                alert_time = datetime.timedelta(minutes=conf.alert_time) + now
             if last_archive < now - datetime.timedelta(seconds=conf.archive_time):
-                # TODO(niall): Get category objects
-                for category in categories:
-                    queue.archive_cat_counts(category, last_archive)
+                for c in category.Category.get_all_categories(queue.conn):
+                    queue.archive_cat_counts(c.cat_id, last_archive)
                 last_archive = now
             if err:
                 parsed = json.loads(err)

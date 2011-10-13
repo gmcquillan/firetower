@@ -14,8 +14,10 @@ REDIS = redis_util.Redis(REDIS_HOST, REDIS_PORT)
 
 app = Flask(__name__)
 
+
 def timestamp(dttm):
         return timegm(dttm.utctimetuple())
+
 
 @app.route("/")
 def root():
@@ -25,6 +27,7 @@ def root():
         lines.append("<li>%s</li>" % cat)
 
     return "<ul>%s</ul>" % "\n".join(lines)
+
 
 @app.route("/default/")
 def default():
@@ -46,6 +49,7 @@ def default():
     return render_template(
         "last_5_index.html", categories = cat_dict.items(), results = results
     )
+
 
 @app.route("/aggregate")
 def aggregate():
@@ -69,10 +73,11 @@ def aggregate():
     return render_template(
         "aggregate.html", totals = totals)
 
+
 @app.route("/api/categories/<category_id>")
 def category_api(category_id):
     redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
-    cat_dict = redis.conn.hgetall("category_ids")   
+    cat_dict = redis.conn.hgetall("category_ids")
     category = cat_dict[category_id]
 
     end = flask.request.args.get('end', time.time())
@@ -80,8 +85,9 @@ def category_api(category_id):
 
     error_totals = {}
     time_series = redis.get_timeseries(category, start, end)
-    
+
     return flask.jsonify(time_series)
+
 
 def main():
     app.run(debug=True, use_evalex=False, host='0.0.0.0')
