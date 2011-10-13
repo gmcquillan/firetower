@@ -19,3 +19,7 @@ alert_time: 0.5
 
 timeslices:
   - 300  # Look 5 minutes into the past for threshold checks
+
+# Number of seconds between archive sweeps for counters in Redis
+
+archive_time: 5
