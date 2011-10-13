@@ -1,5 +1,31 @@
+import time
 
 import redis_util
+import config
+
+
+class TimeSeries(object):
+
+    def __init__(self, redis_conn, cat_id):
+        self.cat_id = cat_id
+        self.redis_conn = redis_conn
+
+    def range(self, start, end):
+        return self.redis_conn.zrevrangebyscore(
+            "ts_%s" % self.cat_id, end, start, withscores=True
+        )
+
+
+class Events(object):
+    def __init__(self, redis_conn, cat_id):
+        self.cat_id = cat_id
+        self.redis_conn = redis_conn
+
+    def last_x(self, count):
+        self.redis_conn.zrevrange(
+            "data_%s" % self.cat_id, 0, count
+        )
+
 
 class Category(object):
 
@@ -14,6 +40,8 @@ class Category(object):
             self.cat_id = redis_util.Redis.construct_cat_id(signature)
         elif cat_id:
             self.cat_id = cat_id
+        self.timeseries = TimeSeries(redis_conn, self.cat_id)
+        self.events = Events(redis_conn, self.cat_id)
 
     @classmethod
     def create(cls, redis_conn, signature):
@@ -100,11 +128,3 @@ class Category(object):
         )
 
     threshold = property(_get_threshold, _set_threshold)
-
-
-class TimeSeries(object):
-    pass
-
-
-class Events(object):
-    pass
