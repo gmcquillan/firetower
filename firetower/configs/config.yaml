@@ -23,3 +23,9 @@ timeslices:
 # Number of seconds between archive sweeps for counters in Redis
 
 archive_time: 2
+
+
+# Logging Section
+
+log_file: firetower-server.log
+log_level: 0
