@@ -72,7 +72,7 @@ def aggregate():
 @app.route("/api/categories/<category_id>")
 def category_api(category_id):
     redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
-    cat_dict = redis.conn.hgetall("category_ids")   
+    cat_dict = redis.conn.hgetall("category_ids")
     category = cat_dict[category_id]
 
     end = flask.request.args.get('end', time.time())
@@ -80,7 +80,7 @@ def category_api(category_id):
 
     error_totals = {}
     time_series = redis.get_timeseries(category, start, end)
-    
+
     return flask.jsonify(time_series)
 
 def main():

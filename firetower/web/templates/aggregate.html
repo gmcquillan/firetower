@@ -21,7 +21,7 @@
 						console.log(jsonData)
 					}
 				});
-	
+
                 {% for total in totals %}
                 var data_{{total.0}} = [
                     [{{ loop.index }}, {{total.2}}]

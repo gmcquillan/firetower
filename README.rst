@@ -2,13 +2,13 @@
 Firetower
 =========
 
-Firetower is a system designed to be a point of aggregation for errors from a large or distributed system. 
+Firetower is a system designed to be a point of aggregation for errors from a large or distributed system.
 
 One of the key features of Firetower is its ability to classify incoming errors and normalize their counts in a timeseries as to make monitoring and analysis of service errors much easier.
 
 The goal of the project is to bridge the gap in systems analysis between syslog and custom map-reduce style batch analysis systems in terms of performance, accuracy, and ease of setup. It should be noted that this project is still mostly in the prototype stages of development.
 
-The basic form of the error messages are expected to be somewhat backwards compatible with syslog protocol. 
+The basic form of the error messages are expected to be somewhat backwards compatible with syslog protocol.
 See the Syslog RFC_.
 
 .. _RFC: http://tools.ietf.org/html/rfc5424
