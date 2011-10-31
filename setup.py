@@ -36,6 +36,7 @@ setup(name="Firetower",
 
       install_requires=[
         'flask',
+        'logbook',
         'redis>2.4',
         'PyYAML',
         ],

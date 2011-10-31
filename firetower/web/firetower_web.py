@@ -6,6 +6,7 @@ import time
 import flask
 from flask import Flask, render_template
 
+from firetower import category
 from firetower import  redis_util
 
 REDIS_HOST = "localhost"
@@ -73,18 +74,26 @@ def aggregate():
     return render_template(
         "aggregate.html", totals = totals)
 
+@app.route("/api/categories/")
+def categories_api():
+    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
+    cats = category.Category.get_all_categories(redis.conn)
+    end = flask.request.args.get('end', time.time())
+    start = flask.request.args.get('start', end-300)
+    time_series = {}
+    for cat in cats:
+        time_series[cat.cat_id] = cat.timeseries.range(start, end)
+
+    return flask.jsonify(time_series)
 
 @app.route("/api/categories/<category_id>")
 def category_api(category_id):
     redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
-    cat_dict = redis.conn.hgetall("category_ids")
-    category = cat_dict[category_id]
-
+    cat = category.Category(redis.conn, cat_id=category_id)
     end = flask.request.args.get('end', time.time())
     start = flask.request.args.get('start', end-300)
 
-    error_totals = {}
-    time_series = redis.get_timeseries(category, start, end)
+    time_series = cat.timeseries.range(start, end)
 
     return flask.jsonify(time_series)
 

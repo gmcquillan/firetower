@@ -1,5 +1,6 @@
 *.pyc
 *.swp
+*.log
 firetower/.Python
 bin/*
 include/*

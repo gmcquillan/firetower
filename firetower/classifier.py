@@ -125,6 +125,6 @@ class Levenshtein(Classifier):
         else:
             cat_sig = error['sig']
             cat_id = self.redis.construct_cat_id(cat_sig)
-            logging.info('Adding new category with id: %s' % (cat_id,))
+            log.info('Adding new category with id: %s' % (cat_id,))
             self.redis.add_category(cat_sig)
             self.write_errors(cat_id, error)
