@@ -1,8 +1,4 @@
-import time
-
 import redis_util
-import config
-
 
 class TimeSeries(object):
 
@@ -125,7 +121,7 @@ class Category(object):
         else:
             return thresh
 
-    def _set_threshold(self):
+    def _set_threshold(self, value):
         return self.conn.hset(
             self.CAT_META_HASH,
             "%s:%s" %(self.cat_id, self.THRESHOLD_KEY),
