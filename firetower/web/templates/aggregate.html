@@ -5,11 +5,14 @@
         {% block content %}
         <div id="placeholder" style="width:700px;height:300px"></div>
         <br />
-        <table>
+        <div class="legend">
             {% for total in totals %}
-            <tr><td>{{total.1}}</td><td>{{total.2}}</td></tr>
+            <ul>
+                <li>{{total.1}}</li>
+                <li>{{total.2}}</li>
+            </ul>
             {% endfor %}
-        </table>
+        </div>
 
 
         <script type="text/javascript">

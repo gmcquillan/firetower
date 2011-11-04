@@ -2,7 +2,8 @@
     <head>
         <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.js?1313656006"></script>
         <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.flot.js?1313656006"></script>
-        <style type="text/css">
+        <link rel="stylesheet" type="text/css" href="../static/css/style.css">
+        <!--style type="text/css">
             body {
                 /*background:  #626266; */
                 font-family: Georgia, "Times New Roman", Times, serif;
@@ -24,19 +25,23 @@
             }
             #placeholder {
             }
-        </style>
+        </style-->
         <title>Firetower</title>
     </head>
     <body>
+    <div id="container">
+    <div id="header">
+        <img class="logo" src="../static/img/logo.png" />
+    </div>
         <div id="main">
             <div id="title">
                 {% block title %}
                 {% endblock %}
             </div>
-        </div>
-        
+
         {% block content %}
         {% endblock %}
-        
+        </div>
+    </div>
    </body>
 </html>
