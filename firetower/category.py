@@ -10,6 +10,11 @@ class TimeSeries(object):
         self.cat_id = cat_id
         self.redis_conn = redis_conn
 
+    def all(self):
+        return self.redis_conn.zrange(
+            "ts_%s" % self.cat_id, 0, -1, withscores=True
+        )
+
     def range(self, start, end):
         return self.redis_conn.zrevrangebyscore(
             "ts_%s" % self.cat_id, end, start, withscores=True
