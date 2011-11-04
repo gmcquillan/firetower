@@ -24,9 +24,9 @@ def main():
     (options, args) = parser.parse_args()
     conf = config.Config(options.conf_path)
 
-    conn = imaplib.IMAP4_SSL(config["imap_host"])
-    imap_user = config["imap_user"]
-    imap_password = config.get("imap_password")
+    conn = imaplib.IMAP4_SSL(conf["imap_host"])
+    imap_user = conf["imap_user"]
+    imap_password = conf.get("imap_password")
 
     queue = Redis(host=conf.redis_host, port=conf.redis_port)
 
