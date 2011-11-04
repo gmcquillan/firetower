@@ -2,12 +2,10 @@
 
 UI Changes:
 
-1. Port to Django.
-2. /default/ url to display all of the categories graphed for the past 60 minutes.
-3. /custom/ url + GET vars to varry the graph output beyond that.
-4. /aggregate/ url to chart counts over all time.
-5. Category admin pages:
+1. /default/ url to display all of the categories graphed for the past 60 minutes.
+2. /custom/ url + GET vars to varry the graph output beyond that.
+3. /aggregate/ url to chart counts over all time.
+4. Category admin pages:
   - Assign human readable names
   - Delete the category
   - Define Threshold for Category by timeslice.
-6. Decide on storage engine for Django
