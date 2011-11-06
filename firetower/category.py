@@ -3,15 +3,37 @@ import redis_util
 class TimeSeries(object):
 
     def __init__(self, redis_conn, cat_id):
+        """Create a time series instance for a category
+
+        This object exposes the time series data stored in the sorted set
+        ts_{cat_id}.
+
+        """
         self.cat_id = cat_id
         self.redis_conn = redis_conn
 
     def all(self):
+        """Return all timeseries data for the category.
+
+        The data will be returned as a sequence of sequences.
+        Each sub-sequence is of the form (VALUE, TIMESTAMP) where TIMESTAMP is
+        a number of seconds since epoch and VALUE is the number of times the
+        category appeared in that second.
+        """
         return self.redis_conn.zrange(
             "ts_%s" % self.cat_id, 0, -1, withscores=True
         )
 
     def range(self, start, end):
+        """Return all timeseries data for the category between start and end.
+
+        start and end are assumed to be seconds since the epoch.
+
+        The data will be returned as a sequence of sequences.
+        Each sub-sequence is of the form (VALUE, TIMESTAMP) where TIMESTAMP is
+        a number of seconds since epoch and VALUE is the number of times the
+        category appeared in that second.
+        """
         return self.redis_conn.zrevrangebyscore(
             "ts_%s" % self.cat_id, end, start, withscores=True
         )
@@ -29,6 +51,12 @@ class Events(object):
 
 
 class Category(object):
+    """A class to encapsulate operations involving categories and their metadata
+
+    Currently exposes 3 read/write properties: signature, human_name and
+    threshold.
+
+    """
 
     CAT_META_HASH = "category_ids"
     SIGNATURE_KEY = "signature"
@@ -37,12 +65,17 @@ class Category(object):
 
     def __init__(self, redis_conn, signature=None, cat_id=None):
         self.conn = redis_conn
+        
         if signature:
             self.cat_id = redis_util.Redis.construct_cat_id(signature)
         elif cat_id:
             self.cat_id = cat_id
-        self.timeseries = TimeSeries(redis_conn, self.cat_id)
-        self.events = Events(redis_conn, self.cat_id)
+        else:
+            self.cat_id = None
+
+        if self.cat_id:
+            self.timeseries = TimeSeries(redis_conn, self.cat_id)
+            self.events = Events(redis_conn, self.cat_id)
 
     @classmethod
     def create(cls, redis_conn, signature):
@@ -70,6 +103,7 @@ class Category(object):
 
     @classmethod
     def get_all_categories(cls, redis_conn):
+        """Return a list of all currently defined categories"""
         categories = []
         hash_map = redis_conn.hgetall(cls.CAT_META_HASH)
         for key in hash_map:
