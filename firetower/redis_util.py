@@ -16,7 +16,13 @@ from redis.exceptions import ConnectionError
 import category
 
 class MockRedis(object):
-    data = {}
+    _data = {}
+
+    def __init__(self, share_state=True):
+        if share_state:
+            self.data = self._data
+        else:
+            self.data = {}
 
     def hgetall(self, key):
         return self.data[key]

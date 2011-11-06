@@ -65,7 +65,7 @@ class Category(object):
 
     def __init__(self, redis_conn, signature=None, cat_id=None):
         self.conn = redis_conn
-        
+
         if signature:
             self.cat_id = redis_util.Redis.construct_cat_id(signature)
         elif cat_id:
@@ -99,7 +99,7 @@ class Category(object):
         for key, value in cat_fields:
             redis_conn.hset(cls.CAT_META_HASH, "%s:%s" %(cat_id, key), value)
 
-        return cls(redis_conn, cat_id)
+        return cls(redis_conn, cat_id=cat_id)
 
     @classmethod
     def get_all_categories(cls, redis_conn):
