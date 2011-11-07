@@ -41,6 +41,9 @@ class MockRedis(object):
         rhash[sub_key] = value
         self.data[root_key] = rhash
 
+    def hdel(self, root_key, sub_key):
+        del self.data[root_key][sub_key]
+
     def keys(self):
         return self.data.keys()
 
@@ -73,20 +76,36 @@ class MockRedis(object):
         heappush(zheap, (score, value))
         self.data[name] = zheap
 
-    def _zrange_op(self, name, start, stop, reverse):
+    def _zrange_op(self, name, start, stop, reverse, withscores=False):
         zheap = self.data.get(name, [])
         if stop < 0:
             stop += len(zheap) + 1
         heap_list = list(merge(zheap))
         if reverse:
             heap_list.reverse()
-        return heap_list[start:stop]
+        if withscores:
+            return heap_list[start:stop]
+        else:
+            return [x[0] for x in heap_list]
 
-    def zrange(self, name, start, stop):
-        return self._zrange_op(name, start, stop, False)
+    def zrange(self, name, start, stop, withscores=False):
+        return self._zrange_op(name, start, stop, False, withscores=withscores)
 
-    def zrevrange(self, name, start, stop):
-        return self._zrange_op(name, start, stop, True)
+    def zrevrange(self, name, start, stop, withscores=False):
+        return self._zrange_op(name, start, stop, True, withscores=withscores)
+
+    def zrevrangebyscore(self, name, stop, start, withscores=True):
+        zheap = self.data.get(name, [])
+        heap_list = list(merge(zheap))
+        ret = []
+        for score, value in heap_list:
+            if score >= start and score <= stop:
+                ret.append([score, value])
+        if withscores:
+            return ret
+        else:
+            return [x[0] for x in ret]
+        return ret
 
 
 class Redis(object):
@@ -252,25 +271,28 @@ class Redis(object):
         if list_of_errors:
             return list_of_errors
 
-    def archive_cat_counts(self, cat_id, start_time):
-        """Move everything before start_time into a Sorted Set.
 
-        Args:
-            category: str, name of category.
-            start_time: int, epoch time.
-        """
-        start_time = calendar.timegm(start_time.timetuple())
+def generate_ts_value(ts, count):
+    return "%s:%s" % (ts, count)
 
-        ts_key = 'ts_%s' % (cat_id,)
-        counter_key = 'counter_%s' % (cat_id,)
-        counts = self.conn.hgetall(counter_key)
-        counters_to_delete = []
-        for ts in counts:
-            if int(ts) < start_time:
-                self.conn.zadd(ts_key, counts[ts], ts)
-                counters_to_delete.append(ts)
 
-        # Remove the counters from the 'counter' key.
-        # We store longterm counters in the timeseries key (ts).
-        for counter in counters_to_delete:
-            self.conn.hdel(counter_key, counter)
+def archive_cat_counts(conn, cat_id, start_time):
+    """Move everything before start_time into a Sorted Set.
+
+    Args:
+        category: str, name of category.
+        start_time: int, epoch time.
+    """
+    ts_key = 'ts_%s' % (cat_id,)
+    counter_key = 'counter_%s' % (cat_id,)
+    counts = conn.hgetall(counter_key)
+    counters_to_delete = []
+    for ts in counts:
+        if int(ts) < start_time:
+            conn.zadd(ts_key, generate_ts_value(ts, counts[ts]), ts)
+            counters_to_delete.append(ts)
+
+    # Remove the counters from the 'counter' key.
+    # We store longterm counters in the timeseries key (ts).
+    for counter in counters_to_delete:
+        conn.hdel(counter_key, counter)

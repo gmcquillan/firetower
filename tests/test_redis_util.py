@@ -16,16 +16,28 @@ class TestMockRedis(TestCase):
 
 
     def test_zrange(self):
-        assert (self.r.zrange('myzlist', 0, -1) ==
-                [(1, 'one'), (2, 'two'), (3, 'three')])
-        assert self.r.zrange('myzlist', 2, 3) == [(3, 'three')]
-        assert self.r.zrange('myzlist', -2, -1) == [(2, 'two'), (3, 'three')]
+        self.assertEqual(
+            self.r.zrange('myzlist', 0, -1, withscores=True),
+            [(1, 'one'), (2, 'two'), (3, 'three')]
+        )
+        self.assertEqual(
+            self.r.zrange('myzlist', 2, 3, withscores=True), [(3, 'three')])
+        self.assertEqual(
+            self.r.zrange('myzlist', -2, -1, withscores=True),
+            [(2, 'two'), (3, 'three')]
+        )
 
     def test_zrevrange(self):
-        assert (self.r.zrevrange('myzlist', 0, -1) ==
-                [(3, 'three'), (2, 'two'), (1, 'one')])
-        assert self.r.zrevrange('myzlist', 2, 3) == [(1, 'one')]
-        assert self.r.zrevrange('myzlist', -2, -1) == [(2, 'two'), (1, 'one')]
+        self.assertEqual(
+            self.r.zrevrange('myzlist', 0, -1, withscores=True),
+            [(3, 'three'), (2, 'two'), (1, 'one')]
+        )
+        self.assertEqual(
+            self.r.zrevrange('myzlist', 2, 3, withscores=True), [(1, 'one')])
+        self.assertEqual(
+            self.r.zrevrange('myzlist', -2, -1, withscores=True),
+            [(2, 'two'), (1, 'one')]
+        )
 
 
 class TestRedisUtil(TestCase):

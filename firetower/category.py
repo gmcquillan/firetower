@@ -1,6 +1,10 @@
+import re
+
 import redis_util
 
 class TimeSeries(object):
+
+    ts_hit_re = re.compile("^[^:]+:(.*)$")
 
     def __init__(self, redis_conn, cat_id):
         """Create a time series instance for a category
@@ -12,6 +16,14 @@ class TimeSeries(object):
         self.cat_id = cat_id
         self.redis_conn = redis_conn
 
+    def convert_ts_list(self, ts_list):
+        ret = []
+        for ts_entry in ts_list:
+            ret.append((
+                ts_entry[0], int(re.match(self.ts_hit_re, ts_entry[1]).group(1))
+            ))
+        return ret
+
     def all(self):
         """Return all timeseries data for the category.
 
@@ -20,9 +32,9 @@ class TimeSeries(object):
         a number of seconds since epoch and VALUE is the number of times the
         category appeared in that second.
         """
-        return self.redis_conn.zrange(
+        return self.convert_ts_list(self.redis_conn.zrange(
             "ts_%s" % self.cat_id, 0, -1, withscores=True
-        )
+        ))
 
     def range(self, start, end):
         """Return all timeseries data for the category between start and end.
@@ -34,9 +46,9 @@ class TimeSeries(object):
         a number of seconds since epoch and VALUE is the number of times the
         category appeared in that second.
         """
-        return self.redis_conn.zrevrangebyscore(
+        return self.convert_ts_list(self.redis_conn.zrevrangebyscore(
             "ts_%s" % self.cat_id, end, start, withscores=True
-        )
+        ))
 
 
 class Events(object):

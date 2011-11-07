@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from firetower import redis_util
-from firetower.category import Category
+from firetower.category import Category, TimeSeries
 
 class TestCategory(TestCase):
     def setUp(self):
@@ -61,9 +61,39 @@ class TestCategory(TestCase):
                 "%s:signature" % (new_id), self.cat_sig
             )
 
-        print self.r.data
-
         cats = Category.get_all_categories(self.r)
         self.assertEqual(len(cats), len(new_ids) + 1)
         for cat in cats:
             self.assertEqual(cat.signature, self.cat_sig)
+
+
+class TestTimeSeries(TestCase):
+    def add_ts(self, ts, count, cat_id=None):
+        if not cat_id:
+            cat_id = self.cat_id
+        self.r.zadd(
+            "ts_%s" % self.cat_id, redis_util.generate_ts_value(ts, count), ts
+        )
+
+    def setUp(self):
+        self.r = redis_util.MockRedis(share_state=False)
+        self.cat_id = "foobar"
+        self.time_series = TimeSeries(self.r, self.cat_id)
+
+    def test_get_all(self):
+        start_ts = 100
+        expected_counts = [1, 2, 3]
+        for i, count in enumerate(expected_counts):
+            self.add_ts(start_ts+i, count)
+
+        ts_list = self.time_series.all()
+        self.assertEqual(len(ts_list), len(expected_counts))
+        for ts, count in ts_list:
+            self.assertTrue(count in expected_counts)
+
+    def test_get_range(self):
+        for count, ts in enumerate(range(100, 120)):
+            self.add_ts(ts, count)
+
+        ts_list = self.time_series.range(110, 115)
+        self.assertEqual(len(ts_list), 6)
