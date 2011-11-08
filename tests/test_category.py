@@ -72,7 +72,7 @@ class TestTimeSeries(TestCase):
         if not cat_id:
             cat_id = self.cat_id
         self.r.zadd(
-            "ts_%s" % self.cat_id, redis_util.generate_ts_value(ts, count), ts
+            "ts_%s" % self.cat_id, TimeSeries.generate_ts_value(ts, count), ts
         )
 
     def setUp(self):

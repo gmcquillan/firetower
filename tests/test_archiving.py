@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from firetower import redis_util
+from firetower.category import TimeSeries
 
 def ts_to_hits(ts):
     return int(ts[1].split(":")[1])
@@ -16,7 +17,7 @@ class TestArchive(TestCase):
         count = 10
 
         self.r.hset(self.counter, self.start_time-1, count)
-        redis_util.archive_cat_counts(self.r, self.cat_id, self.start_time)
+        TimeSeries.archive_cat_counts(self.r, self.cat_id, self.start_time)
         self.assertRaises(KeyError, self.r.hget, self.counter, self.start_time-1)
 
         ts = self.r.zrange("ts_%s" % self.cat_id, 0, -1, withscores=True)
@@ -28,7 +29,7 @@ class TestArchive(TestCase):
 
         self.r.hset(self.counter, self.start_time-1, 1)
         self.r.hset(self.counter, self.start_time+1, 2)
-        redis_util.archive_cat_counts(self.r, self.cat_id, self.start_time)
+        TimeSeries.archive_cat_counts(self.r, self.cat_id, self.start_time)
 
         self.assertRaises(KeyError, self.r.hget, self.counter, self.start_time-1)
         self.assertTrue(self.r.hget(self.counter, self.start_time+1))
@@ -41,7 +42,7 @@ class TestArchive(TestCase):
         for step in [1,2]:
             self.r.hset(self.counter, self.start_time-step, 1)
 
-        redis_util.archive_cat_counts(self.r, self.cat_id, self.start_time)
+        TimeSeries.archive_cat_counts(self.r, self.cat_id, self.start_time)
 
         for step in [1, 2]:
             self.assertRaises(

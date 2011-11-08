@@ -3,9 +3,6 @@ import re
 import redis_util
 
 class TimeSeries(object):
-
-    ts_hit_re = re.compile("^[^:]+:(.*)$")
-
     def __init__(self, redis_conn, cat_id):
         """Create a time series instance for a category
 
@@ -17,10 +14,18 @@ class TimeSeries(object):
         self.redis_conn = redis_conn
 
     def convert_ts_list(self, ts_list):
+        """Process lists from timeseries sorted sets.
+
+        Takes a list of scores and values from a time series sorted set and
+        return a list of entries in the form ({TIMESTAMP}, {COUNT}). This is
+        required because the TS sorted set doesn't hold the raw count, to make
+        the values unique it stores them as '{TIMESTAMP}:{COUNT}'
+
+        """
         ret = []
         for ts_entry in ts_list:
             ret.append((
-                ts_entry[0], int(re.match(self.ts_hit_re, ts_entry[1]).group(1))
+                ts_entry[0], int(ts_entry[1].split(":")[1])
             ))
         return ret
 
@@ -49,6 +54,34 @@ class TimeSeries(object):
         return self.convert_ts_list(self.redis_conn.zrevrangebyscore(
             "ts_%s" % self.cat_id, end, start, withscores=True
         ))
+
+    @staticmethod
+    def generate_ts_value(ts, count):
+        """Turn a timestamp and cat count into a value for storage in a set"""
+        return "%s:%s" % (ts, count)
+
+    @classmethod
+    def archive_cat_counts(cls, conn, cat_id, start_time):
+        """Move everything before start_time into a Sorted Set.
+
+        Args:
+            conn: Redis connection
+            cat_id: The category hash ID
+            start_time: int, epoch time.
+        """
+        ts_key = 'ts_%s' % (cat_id,)
+        counter_key = 'counter_%s' % (cat_id,)
+        counts = conn.hgetall(counter_key)
+        counters_to_delete = []
+        for ts in counts:
+            if int(ts) < start_time:
+                conn.zadd(ts_key, cls.generate_ts_value(ts, counts[ts]), ts)
+                counters_to_delete.append(ts)
+
+        # Remove the counters from the 'counter' key.
+        # We store longterm counters in the timeseries key (ts).
+        for counter in counters_to_delete:
+            conn.hdel(counter_key, counter)
 
 
 class Events(object):
