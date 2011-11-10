@@ -1,6 +1,9 @@
+from collections import namedtuple
 import re
 
 import redis_util
+
+TSTuple = namedtuple("TimeSeriesTuple", ("timestamp", "count"))
 
 class TimeSeries(object):
     def __init__(self, redis_conn, cat_id):
@@ -24,9 +27,7 @@ class TimeSeries(object):
         """
         ret = []
         for ts_entry in ts_list:
-            ret.append((
-                ts_entry[0], int(ts_entry[1].split(":")[1])
-            ))
+            ret.append(TSTuple(ts_entry[0], int(ts_entry[1].split(":")[1])))
         return ret
 
     def all(self):
