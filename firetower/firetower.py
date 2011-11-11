@@ -11,7 +11,7 @@ import alerts
 import config
 import classifier
 import category
-from redis_util import Redis
+import redis_util
 
 
 class Main(object):
@@ -33,7 +33,7 @@ class Main(object):
         log.info('Started server with configuration file %s' % (options.conf_path))
 
         alert_time = None
-        queue = Redis(host=conf.redis_host, port=conf.redis_port)
+        queue = redis_util.Redis(host=conf.redis_host, port=conf.redis_port)
         cls = classifier.Levenshtein(queue)
         alert = alerts.Alert(queue)
         last_archive = datetime.datetime.utcnow()
@@ -44,7 +44,7 @@ class Main(object):
                 log.debug('Archiving counts older than %s seconds' % (conf.archive_time,))
                 for c in category.Category.get_all_categories(queue.conn):
                     log.debug('Archiving for %s category' % (c.cat_id))
-                    queue.archive_cat_counts(c.cat_id, last_archive)
+                    redis_util.archive_cat_counts(queue, c.cat_id, last_archive)
                 last_archive = now
             if err:
                 parsed = json.loads(err)

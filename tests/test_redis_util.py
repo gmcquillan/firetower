@@ -16,16 +16,28 @@ class TestMockRedis(TestCase):
 
 
     def test_zrange(self):
-        assert (self.r.zrange('myzlist', 0, -1) ==
-                [(1, 'one'), (2, 'two'), (3, 'three')])
-        assert self.r.zrange('myzlist', 2, 3) == [(3, 'three')]
-        assert self.r.zrange('myzlist', -2, -1) == [(2, 'two'), (3, 'three')]
+        self.assertEqual(
+            self.r.zrange('myzlist', 0, -1, withscores=True),
+            [(1, 'one'), (2, 'two'), (3, 'three')]
+        )
+        self.assertEqual(
+            self.r.zrange('myzlist', 2, 3, withscores=True), [(3, 'three')])
+        self.assertEqual(
+            self.r.zrange('myzlist', -2, -1, withscores=True),
+            [(2, 'two'), (3, 'three')]
+        )
 
     def test_zrevrange(self):
-        assert (self.r.zrevrange('myzlist', 0, -1) ==
-                [(3, 'three'), (2, 'two'), (1, 'one')])
-        assert self.r.zrevrange('myzlist', 2, 3) == [(1, 'one')]
-        assert self.r.zrevrange('myzlist', -2, -1) == [(2, 'two'), (1, 'one')]
+        self.assertEqual(
+            self.r.zrevrange('myzlist', 0, -1, withscores=True),
+            [(3, 'three'), (2, 'two'), (1, 'one')]
+        )
+        self.assertEqual(
+            self.r.zrevrange('myzlist', 2, 3, withscores=True), [(1, 'one')])
+        self.assertEqual(
+            self.r.zrevrange('myzlist', -2, -1, withscores=True),
+            [(2, 'two'), (1, 'one')]
+        )
 
 
 class TestRedisUtil(TestCase):
@@ -51,27 +63,3 @@ class TestRedisUtil(TestCase):
         result = self.r.lpop('test_key')
 
         assert result == test_val
-
-    def test_add_category(self):
-        """Test that we can successfully add categories"""
-        cat_str = "Test category"
-        cat_id = self.r_util.construct_cat_id(cat_str)
-        self.r_util.add_category(cat_str)
-        c = redis_util.Category(self.r_util.conn, cat_str)
-        self.assertEqual(c.signature, cat_str)
-        self.assertTrue(c.threshold is None)
-
-
-    def test_getting_cat_threshold(self):
-        cat_id = "cat_id"
-        thresh_key = "cat_id:threshold"
-        cat_key = "category_ids"
-
-        self.r_util.conn.hset(cat_key, thresh_key, "0")
-        self.assertEqual(self.r_util.get_threshold_from_id(cat_id), 0)
-
-        self.r_util.conn.hset(cat_key, thresh_key, "0.2")
-        self.assertEqual(self.r_util.get_threshold_from_id(cat_id), 0.2)
-
-        self.r_util.conn.hset(cat_key, thresh_key, "foobar")
-        self.assertRaises(ValueError, self.r_util.get_threshold_from_id, cat_id)
