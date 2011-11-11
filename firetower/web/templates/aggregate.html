@@ -9,58 +9,60 @@
 
         <script type="text/javascript">
             $(function () {
+                // Draw initial chart
+                getTimeseriesData();
+            });
+
+            getTimeseriesData = function() {
                 var handler = $.ajax({
                     url: "/api/categories/timeseries",
                     success: function(returnedData, httpStatus, xhr){
                         var jsonData = JSON.parse(returnedData);
-                        function next() {
-                            return {
-                                time: ++t,
-                                value: v = ~~Math.max(10, Math.min(90, v + 10 * (Math.random() - .5)))
-                            };
-                        };
-
                         var colorIndex = 0;
 
                         /* Add data to chart */
                         for (cat in jsonData) {
                             var timeData = jsonData[cat];
-                            //console.log(timeData);
-                            
                             var allData = new Array();
                             var catTotal = 0;
                     
                             for (var i=0, arr; arr=timeData[i]; i++) {
-                                //console.log(arr);
                                 allData.push( { time: arr[0] , value: arr[1] } )
                                 catTotal += arr[1];
                             }
 
-                            //console.log(allData);
-
                             dynamicChart(allData, colorIndex);
 
-                            // Increment color index to draw each
-                            // dataset in a new color
-                            // TODO: automatically interpolate
-                            // new colors using d3 interpolation
+                            // Increment color index to draw each dataset in a new color
+                            // TODO: automatically interpolate new colors using d3 interpolation
                             colorIndex += 1;
 
-                            // Add category name to legend
-                            $("#key").append('<ul><li class="catName">'+cat+'</li><li class="catTotal">Total instances: '+catTotal+'</li></ul>')
+                            // Get human readable category name
+                            getCategoryName(cat, catTotal);
 
                             //var dataCount = timeData.length;
                         }
                     }
                 });
-            });
+            }
+
+            getCategoryName = function(catId, catTotal) {
+                var handler = $.ajax({
+                    url: "/api/categories/",
+                    success: function(jsonData, httpStatus, xhr){
+                        var catData = JSON.parse(jsonData);
+                        var catSignature = catData[catId].signature;
+                        
+                        // Add category name to legend
+                        $("#key").append('<ul><li class="catName">'+catSignature+'</li><li class="catTotal">'+catTotal+'</li></ul>')
+                    }
+                });
+            }
 
             randomColor = function() {
-                console.log('randomColor fired')
                 function c() {
                     return ('0' + Math.floor(Math.random() * 256).toString(16)).substr(-2);
                 }
-                console.log('#' + c() + c() + c());
                 return '#' + c() + c() + c();
             };
 
@@ -87,53 +89,54 @@
                 // }, 1500);
 
                 var data = jsonData;
-                console.log(data);
+                //console.log(data);
 
                 /* Cheating with a static color array for now */
                 var colorArray = ['#99c', '#669', '#336', '#009', '#33c', '#06c'];
 
-                function redraw() {
-                    var rect = chart.selectAll("rect")
-                        .data(data, function(d) { return d.time; });
-
-                    rect.enter().insert("svg:rect", "line")
-                        .attr("x", function(d, i) { return x(i + 1) - .5; })
-                        .attr("y", function(d) { return h - y(d.value) - .5; })
-                        .attr("width", w)
-                        .attr("height", function(d) { return y(d.value); })
-                        .transition()
-                        .duration(1000)
-                        .attr("x", function(d, i) { return x(i) - .5; });
-
-                    rect.transition()
-                        .duration(1000)
-                        .attr("x", function(d, i) { return x(i) - .5; });
-
-                    rect.exit().transition()
-                        .duration(1000)
-                        .attr("x", function(d, i) { return x(i - 1) - .5; })
-                        .remove();
-                }
-
                 /* Set maximum bar dimensions */
-                var w = 20,
-                    h = 80;
+                var w = 4,
+                    h = 200;
 
                 var x = d3.scale.linear()
                     .domain([0, 1])
                     .range([0, w]);
 
                 var y = d3.scale.linear()
-                    .domain([0, 100])
+                    .domain([0, 300])
                     .rangeRound([0, h]);
                 
                 /* Create chart */
                 var chart = d3.select("#placeholder")
                     .append("svg:svg")
                         .attr("class", "chart")
-                        .attr("width", w * data.length - 1)
-                        .attr("height", h);
+                        //.attr("width", w * data.length - 1)
+                        .attr("width", 840)
+                        .attr("height", h)
+                    // .append("svg:g")
+                    //     .attr("transform", "translate(20, 0)");
                 
+                /* Add value lines */
+                chart.selectAll("line")
+                    .data(y.ticks(5))
+                    .enter().append("svg:line")
+                        .attr("x1", 0)
+                        .attr("x2", 840)
+                        .attr("y1", y)
+                        .attr("y2", y)
+                        .attr("stroke", "#ccc");
+                
+                // /* Add value line labels */
+                // chart.selectAll("text.rule")
+                //     .data(y.ticks(5))
+                //     .enter().append("svg:text")
+                //         .attr("class", "rule")
+                //         .attr("x", 0)
+                //         .attr("y", y)
+                //         .attr("text-anchor", "end")
+                //         .attr("color", "#000")
+                //         .text(String);
+
                 /* Draw bars */
                 chart.selectAll("rect")
                     .data(data)
@@ -142,38 +145,32 @@
                         .attr("y", function(d) { return h - y(d.value) - .5; })
                         .attr("width", w)
                         .attr("height", function(d) { return y(d.value); })
-                        .attr("fill", colorArray[colorIndex]);
+                        .attr("fill", colorArray[colorIndex])
+                        .transition()
+                            .duration(1000)
+                            .attr("x", function(d, i) { return x(i) - .5; })
                 
-                //  Add bar labels 
-                // chart.selectAll("text")
-                //     .data(data, function(d) { return d.value; })
-                //     .enter().append("svg:text")
-                //         .attr("x", function(d, i) { return x(i) - .5; })
-                //         .attr("y", function(d) { return h - y(d.value) - .5; })
-                //         .attr("dx", -3) //padding-right
-                //         .attr("dy", ".35em") //vertical-align: middle
-                //         .attr("text-anchor", "top") //text-align: top?
-                //         .attr("color", "white")
-                //         .text(String);
+                function redraw(data) {
+                    console.log('redraw fired');
+                    console.log(data);
+                    var rect = chart.selectAll("rect")
+                        .data(data)
+                        .transition()
+                            .duration(1000)
+                            .attr("y", function(d) { return h - y(d.value) - .5; })
+                            .attr("height", function(d) { return y(d.value); });
+                }
 
-                // /* Add ticks */
-                // chart.selectAll("line")
-                //     .data(x.ticks(10))
-                //     .enter().append("svg:line")
-                //         .attr("x1", x)
-                //         .attr("x2", x)
-                //         .attr("y1", 0)
-                //         .attr("y2", 120)
-                //         .attr("stroke", "#ccc");
+                // setInterval(function() {
+                //     var handler = $.ajax({
+                //     url: "/api/categories/timeseries",
+                //     success: function(returnedData, httpStatus, xhr){
+                //         var newData = JSON.parse(returnedData);
+                //         redraw(newData);
+                //         }
+                //     });
+                // }, 2000);
 
-
-                /* Emphasize y-axis */
-                chart.append("svg:line")
-                    .attr("x1", 0)
-                    .attr("x2", w * data.length)
-                    .attr("y1", h - .5)
-                    .attr("y2", h - .5)
-                    .attr("stroke", "#000");
             };
         </script>
         {% endblock %}
