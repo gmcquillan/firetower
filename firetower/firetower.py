@@ -44,7 +44,8 @@ class Main(object):
                 log.debug('Archiving counts older than %s seconds' % (conf.archive_time,))
                 for c in category.Category.get_all_categories(queue.conn):
                     log.debug('Archiving for %s category' % (c.cat_id))
-                    redis_util.archive_cat_counts(queue, c.cat_id, last_archive)
+                    category.TimeSeries.archive_cat_counts(
+                        queue.conn, c.cat_id, last_archive)
                 last_archive = now
             if err:
                 parsed = json.loads(err)
