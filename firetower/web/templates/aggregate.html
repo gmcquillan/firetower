@@ -51,10 +51,10 @@
                     url: "/api/categories/",
                     success: function(jsonData, httpStatus, xhr){
                         var catData = JSON.parse(jsonData);
-                        var catSignature = catData[catId].signature;
+                        var catName = catData[catId].human_name;
                         
                         // Add category name to legend
-                        $("#key").append('<ul><li class="catName">'+catSignature+'</li><li class="catTotal">'+catTotal+'</li></ul>')
+                        $("#key").append('<ul><li class="catName">'+catName+'</li><li class="catTotal">'+catTotal+'</li></ul>')
                     }
                 });
             }
