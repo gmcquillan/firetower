@@ -24,17 +24,15 @@ def main():
     (options, args) = parser.parse_args()
     conf = config.Config(options.conf_path)
 
-    conn = imaplib.IMAP4_SSL(conf["imap_host"])
-    imap_user = conf["imap_user"]
-    imap_password = conf.get("imap_password")
+    conn = imaplib.IMAP4_SSL(conf.imap_host)
+    imap_user = conf.imap_user
 
     queue = Redis(host=conf.redis_host, port=conf.redis_port)
 
     processed = 0
 
-    if not imap_password:
-        print "Enter email password"
-        imap_password = getpass.getpass()
+    print "Enter email password"
+    imap_password = getpass.getpass()
 
     conn.login(imap_user, imap_password)
     conn.select("Inbox")
@@ -53,7 +51,7 @@ def main():
                 continue
             msg_obj = email.message_from_string(msg[1])
             ft_dict = {}
-            ft_dict['hostname'] = msg_obj['Received'].split(' ')[1] or '????'
+            ft_dict['hostname'] = msg_obj['Received'].split(' ')[1] if msg_obj['Received'] else '????'
             ft_dict['sig'] = msg_obj.get_payload() or '????'
             ft_dict['date'] = msg_obj["Date"]
             ft_dict['programname'] = 'Maildir Util'

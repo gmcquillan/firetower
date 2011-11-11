@@ -21,7 +21,7 @@ class Config(object):
         self.conf_path = conf_file
         self.redis_host, self.redis_port, self.queue_key, self.alert_time, \
         self.class_thresh, self.timeslices, self.archive_time, \
-        self.log_file, self.log_level = \
+        self.log_file, self.log_level, self.imap_user, self.imap_host = \
                 self.load_conf(file(self.conf_path, 'r'))
 
     def load_conf(self, conf_str):
@@ -66,6 +66,9 @@ class Config(object):
         archive_time = conf_dict.get('archive_time', 5)
         log_file = conf_dict.get('log_file', 'firetower-server.log')
         log_level = conf_dict.get('log_level', 1)
+        imap_user = conf_dict.get('imap_user', '')
+        imap_host = conf_dict.get('imap_host', '')
 
         return (redis_host, redis_port, queue_key, alert_time,
-                class_thresh, timeslices, archive_time, log_file, log_level)
+                class_thresh, timeslices, archive_time, log_file, log_level,
+                imap_user, imap_host)

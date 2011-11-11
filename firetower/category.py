@@ -141,6 +141,13 @@ class Category(object):
             self.timeseries = TimeSeries(redis_conn, self.cat_id)
             self.events = Events(redis_conn, self.cat_id)
 
+    def to_dict(self):
+        return {
+            self.SIGNATURE_KEY: self.signature,
+            self.HUMAN_NAME_KEY: self.human_name,
+            self.THRESHOLD_KEY: self.threshold,
+        }
+
     @classmethod
     def create(cls, redis_conn, signature):
         """Adds category metadata.
