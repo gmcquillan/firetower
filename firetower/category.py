@@ -1,3 +1,4 @@
+import calendar
 from collections import namedtuple
 import re
 
@@ -27,7 +28,12 @@ class TimeSeries(object):
         """
         ret = []
         for ts_entry in ts_list:
-            ret.append(TSTuple(ts_entry[0], int(ts_entry[1].split(":")[1])))
+            ret.append(
+                TSTuple(
+                    int(ts_entry[1]),
+                    int(ts_entry[0].split(":")[1])
+                )
+            )
         return ret
 
     def all(self):
@@ -39,7 +45,7 @@ class TimeSeries(object):
         category appeared in that second.
         """
         return self.convert_ts_list(self.redis_conn.zrange(
-            "ts_%s" % self.cat_id, 0, -1, withscores=True
+            "ts_%s" % (self.cat_id), 0, -1, withscores=True
         ))
 
     def range(self, start, end):
@@ -53,7 +59,7 @@ class TimeSeries(object):
         category appeared in that second.
         """
         return self.convert_ts_list(self.redis_conn.zrevrangebyscore(
-            "ts_%s" % self.cat_id, end, start, withscores=True
+            "ts_%s" % (self.cat_id), end, start, withscores=True
         ))
 
     @staticmethod
@@ -75,7 +81,7 @@ class TimeSeries(object):
         counts = conn.hgetall(counter_key)
         counters_to_delete = []
         for ts in counts:
-            if int(ts) < start_time:
+            if int(ts) < calendar.timegm(start_time.timetuple()):
                 conn.zadd(ts_key, cls.generate_ts_value(ts, counts[ts]), ts)
                 counters_to_delete.append(ts)
 

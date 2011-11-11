@@ -1,5 +1,3 @@
-from calendar import timegm
-
 import time
 import calendar
 
@@ -21,19 +19,19 @@ DEFAULT_TIME_SLICE = 300000
 app = Flask(__name__)
 
 
-@app.route("/api/categories")
+@app.route("/api/categories/")
 def cat_route():
-    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
+    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT).conn
 
     ret = {}
-    for cat in category.Category.get_all_categories(redis):
+    for cat in category.Category.get_all_categories(redis.conn):
         ret[cat.cat_id] = cat.to_dict()
 
-    return flask.jsonify(base_timeseries())
+    return flask.jsonify(ret)
 
 
 def base_timeseries(cat_id=None):
-    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
+    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT).conn
     get_all = request.args.get("all")
     start = request.args.get("start")
     end = request.args.get("end")
@@ -47,7 +45,7 @@ def base_timeseries(cat_id=None):
                 time_series[cat.cat_id] = cat.timeseries.all()
             return time_series
     else:
-        if param_start and param_end:
+        if start and end:
             start = calendar.timegm(parser.parse(request.form["start"]))
             end = calendar.timegm(parser.parse(request.form["end"]))
         else:
