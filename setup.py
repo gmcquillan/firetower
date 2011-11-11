@@ -29,7 +29,7 @@ setup(name="Firetower",
         'console_scripts': [
             'firetower-server=firetower.firetower:main',
             'firetower-display=firetower.display:main',
-            'firetower-client=firetower.client:main',
+            'firetower-client=firetower.test_client:main',
             'firetower-web=firetower.web.firetower_web:main',
             ],
         },

@@ -1,54 +1,42 @@
-import random
 import json
-import textwrap
-import time
-from optparse import OptionParser
+ 
+from logbook import Logger
+from logbook import TimedRotatingFileHandler
 
-import config
-from redis_util import Redis
-import tracebacks
+from firetower import config
+from firetower import redis_util
 
-FAKE_SIGS = [
-'Test Exception', 'Another Random Error', 'Banannas', 'ToastToast'
-]
-#FAKE_SIGS = tracebacks.tracebacks
-
-FAKE_DATA = {'hostname': 'testmachine',
-             'msg': 'I/O Exception from some file',
-             'logfacility': 'local1',
-             'syslogtag': 'test',
-             'programname': 'firetower client',
-             'severity': None}
+handler = TimedRotatingFileHandler('firetower-client.log',
+        date_format='%Y-%m-%d')
+handler.push_application()
+log = Logger('Firetower-client')
 
 class Client(object):
-    """Main loop."""
+    """Basic Firetower Client."""
 
-    def run(self, conf):
-        queue = Redis(host=conf.redis_host, port=conf.redis_port)
-        print queue.conn.keys()
-        for i in xrange(0, 50000):
-            try:
-                # Semi-randomly seed the 'sig' key in our fake errors
-                FAKE_DATA['sig'] = random.choice(FAKE_SIGS) + str(random.randint(100, 999))
-                print FAKE_DATA
-                encoded = json.dumps(FAKE_DATA)
-                err = queue.push(conf.queue_key, encoded)
-            except:
-                print "Something went wrong storing value from redis"
+    def __init__(self, conf):
+        self.conf = config.Config(conf)
+        self.redis_host = self.conf.redis_host
+        self.redis_port = self.conf.redis_port
+        self.queue_key = self.conf.queue_key
+        self.queue = redis_util.Redis(host=self.redis_host, port=self.redis_port)
 
-            if not i % 100:
-                time.sleep(random.random())
+    def emit(self, event):
+        """Emit a message to firetower.
 
+        Args:
+            event: str or dict.
 
-def main():
-    parser = OptionParser(usage='usage: firetower options args')
-    parser.add_option(
-        '-c', '--conf', action='store', dest='conf_path',
-         help='Path to YAML configuration file.')
+            if we cannot parse as json, we convert it to a simple JSON struct:
+            {'sig': <event payload>}.
+        """
+        try:
+            unencoded = json.loads(event)
+            if not unencoded.get("sig", None):
+                raise ValueError
+        except ValueError:
+            payload = {"sig": event}
+            event = json.dumps(payload)
 
-    (options, args) = parser.parse_args()
-
-    conf = config.Config(options.conf_path)
-
-    main = Client()
-    main.run(conf)
+        self.queue.push(self.queue_key, event)
+        log.debug("Pushed event %s to firetower" % (event,))
