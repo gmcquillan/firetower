@@ -1,3 +1,4 @@
+import calendar
 from collections import namedtuple
 import re
 
@@ -75,7 +76,7 @@ class TimeSeries(object):
         counts = conn.hgetall(counter_key)
         counters_to_delete = []
         for ts in counts:
-            if int(ts) < start_time:
+            if int(ts) < calendar.timegm(start_time.timetuple()):
                 conn.zadd(ts_key, cls.generate_ts_value(ts, counts[ts]), ts)
                 counters_to_delete.append(ts)
 
