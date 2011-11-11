@@ -26,7 +26,7 @@ def cat_route():
     redis = redis_util.Redis(REDIS_HOST, REDIS_PORT)
 
     ret = {}
-    for cat in category.Category.get_all_categories(redis):
+    for cat in category.Category.get_all_categories(redis.conn):
         ret[cat.cat_id] = cat.to_dict()
 
     return flask.jsonify(base_timeseries())
