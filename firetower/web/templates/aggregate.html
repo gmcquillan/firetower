@@ -95,15 +95,15 @@
                 var colorArray = ['#99c', '#669', '#336', '#009', '#33c', '#06c'];
 
                 /* Set maximum bar dimensions */
-                var w = 4,
-                    h = 200;
+                var w = 20,
+                    h = 150;
 
                 var x = d3.scale.linear()
                     .domain([0, 1])
                     .range([0, w]);
 
                 var y = d3.scale.linear()
-                    .domain([0, 300])
+                    .domain([0, 40])
                     .rangeRound([0, h]);
                 
                 /* Create chart */
@@ -111,7 +111,6 @@
                     .append("svg:svg")
                         .attr("class", "chart")
                         //.attr("width", w * data.length - 1)
-                        .attr("width", 840)
                         .attr("height", h)
                     // .append("svg:g")
                     //     .attr("transform", "translate(20, 0)");

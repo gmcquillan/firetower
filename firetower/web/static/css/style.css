@@ -23,7 +23,7 @@ p {
 
 #title {
     padding-top: 40px;
-    padding-bottom: 25px;
+    padding-bottom: 50px;
 }
 
 #title h1 {
@@ -44,7 +44,7 @@ p {
 .chart {
     min-height: 100px;
     border: 1px solid #ccc;
-    margin-bottom: 40px;
+    margin-bottom: 70px;
 }
 
 .chart rect {
@@ -64,17 +64,18 @@ p {
 #key ul {
     height: 90px;
     width: 150px;
-    margin: 0 20px 153px 0;
+    margin: 0 20px 163px 0;
     padding: 0;
     list-style-type: none;
 }
 
 #key ul li.catName {
     font-weight: bold;
+    margin-top: -30px;
 }
 
 #key ul li.catTotal {
-    font-size: 1.65em;
+    font-size: 1.6em;
     font-weight: bold;
     background-color: #ccf;
     padding: 10px;
