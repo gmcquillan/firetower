@@ -2,7 +2,7 @@ import time
 import calendar
 
 import flask
-from flask import Flask
+from flask import Flask, render_template
 from flask import request
 
 from dateutil import parser
@@ -18,13 +18,17 @@ DEFAULT_TIME_SLICE = 300000
 
 app = Flask(__name__)
 
+@app.route("/aggregate")
+def aggregate():
+    return render_template(
+        "aggregate.html")
 
 @app.route("/api/categories/")
 def cat_route():
     redis = redis_util.Redis(REDIS_HOST, REDIS_PORT).conn
 
     ret = {}
-    for cat in category.Category.get_all_categories(redis.conn):
+    for cat in category.Category.get_all_categories(redis):
         ret[cat.cat_id] = cat.to_dict()
 
     return flask.jsonify(ret)
