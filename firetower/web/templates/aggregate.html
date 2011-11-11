@@ -3,46 +3,177 @@
             <h1> Firetower - Total Errors per Category </h1>
         {% endblock %}
         {% block content %}
-        <div id="placeholder" style="width:700px;height:300px"></div>
-        <br />
-        <table>
-            {% for total in totals %}
-            <tr><td>{{total.1}}</td><td>{{total.2}}</td></tr>
-            {% endfor %}
-        </table>
-
+        <div id="key"></div>
+        <div id="placeholder"></div>
+        <!--div id="legend"></div-->
 
         <script type="text/javascript">
             $(function () {
-				// Add start/end tags at end of url here
-				var handler = $.ajax({
-					url: "/api/categories/e6ecf4b3344bbe767200276b929ab76d1c7ff139",
-					success: function(jsonData, httpStatus, xhr){
-						console.log(jsonData)
-					}
-				});
+                var handler = $.ajax({
+                    url: "/api/categories/timeseries",
+                    success: function(returnedData, httpStatus, xhr){
+                        var jsonData = JSON.parse(returnedData);
+                        function next() {
+                            return {
+                                time: ++t,
+                                value: v = ~~Math.max(10, Math.min(90, v + 10 * (Math.random() - .5)))
+                            };
+                        };
 
-                {% for total in totals %}
-                var data_{{total.0}} = [
-                    [{{ loop.index }}, {{total.2}}]
-                ];
-                {% endfor %}
+                        var colorIndex = 0;
 
-                $.plot(
-                    $("#placeholder"),
+                        /* Add data to chart */
+                        for (cat in jsonData) {
+                            var timeData = jsonData[cat];
+                            //console.log(timeData);
+                            
+                            var allData = new Array();
+                            var catTotal = 0;
+                    
+                            for (var i=0, arr; arr=timeData[i]; i++) {
+                                //console.log(arr);
+                                allData.push( { time: arr[0] , value: arr[1] } )
+                                catTotal += arr[1];
+                            }
 
-                    [
-                        {% for total in totals %}
-                        {data: data_{{total.0}}, label: '{{total.1}}' },
-                        {% endfor %}
-                    ],
-                    {
-                        xaxis: { mode: "time" },
-                        series: {
-                            bars: { show: true },
-                        },
+                            //console.log(allData);
+
+                            dynamicChart(allData, colorIndex);
+
+                            // Increment color index to draw each
+                            // dataset in a new color
+                            // TODO: automatically interpolate
+                            // new colors using d3 interpolation
+                            colorIndex += 1;
+
+                            // Add category name to legend
+                            $("#key").append('<ul><li class="catName">'+cat+'</li><li class="catTotal">Total instances: '+catTotal+'</li></ul>')
+
+                            //var dataCount = timeData.length;
+                        }
                     }
-               );
+                });
             });
+
+            randomColor = function() {
+                console.log('randomColor fired')
+                function c() {
+                    return ('0' + Math.floor(Math.random() * 256).toString(16)).substr(-2);
+                }
+                console.log('#' + c() + c() + c());
+                return '#' + c() + c() + c();
+            };
+
+            dynamicChart = function(jsonData, colorIndex) {
+
+                // // Generate random walk data
+                // var t = 1297110663, // start time
+                //     v = 70, // start value
+                //     data = d3.range(33).map(next); // starting dataset
+                
+                // //console.log(data)
+                
+                // function next() {
+                //     return {
+                //     time: ++t,
+                //     value: v = ~~Math.max(10, Math.min(90, v + 10 * (Math.random() - .5)))
+                //     };
+                // }
+
+                // setInterval(function() {
+                //     data.shift();
+                //     data.push(next());
+                //     redraw();
+                // }, 1500);
+
+                var data = jsonData;
+                console.log(data);
+
+                /* Cheating with a static color array for now */
+                var colorArray = ['#99c', '#669', '#336', '#009', '#33c', '#06c'];
+
+                function redraw() {
+                    var rect = chart.selectAll("rect")
+                        .data(data, function(d) { return d.time; });
+
+                    rect.enter().insert("svg:rect", "line")
+                        .attr("x", function(d, i) { return x(i + 1) - .5; })
+                        .attr("y", function(d) { return h - y(d.value) - .5; })
+                        .attr("width", w)
+                        .attr("height", function(d) { return y(d.value); })
+                        .transition()
+                        .duration(1000)
+                        .attr("x", function(d, i) { return x(i) - .5; });
+
+                    rect.transition()
+                        .duration(1000)
+                        .attr("x", function(d, i) { return x(i) - .5; });
+
+                    rect.exit().transition()
+                        .duration(1000)
+                        .attr("x", function(d, i) { return x(i - 1) - .5; })
+                        .remove();
+                }
+
+                /* Set maximum bar dimensions */
+                var w = 20,
+                    h = 80;
+
+                var x = d3.scale.linear()
+                    .domain([0, 1])
+                    .range([0, w]);
+
+                var y = d3.scale.linear()
+                    .domain([0, 100])
+                    .rangeRound([0, h]);
+                
+                /* Create chart */
+                var chart = d3.select("#placeholder")
+                    .append("svg:svg")
+                        .attr("class", "chart")
+                        .attr("width", w * data.length - 1)
+                        .attr("height", h);
+                
+                /* Draw bars */
+                chart.selectAll("rect")
+                    .data(data)
+                    .enter().append("svg:rect")
+                        .attr("x", function(d, i) { return x(i) - .5; })
+                        .attr("y", function(d) { return h - y(d.value) - .5; })
+                        .attr("width", w)
+                        .attr("height", function(d) { return y(d.value); })
+                        .attr("fill", colorArray[colorIndex]);
+                
+                //  Add bar labels 
+                // chart.selectAll("text")
+                //     .data(data, function(d) { return d.value; })
+                //     .enter().append("svg:text")
+                //         .attr("x", function(d, i) { return x(i) - .5; })
+                //         .attr("y", function(d) { return h - y(d.value) - .5; })
+                //         .attr("dx", -3) //padding-right
+                //         .attr("dy", ".35em") //vertical-align: middle
+                //         .attr("text-anchor", "top") //text-align: top?
+                //         .attr("color", "white")
+                //         .text(String);
+
+                // /* Add ticks */
+                // chart.selectAll("line")
+                //     .data(x.ticks(10))
+                //     .enter().append("svg:line")
+                //         .attr("x1", x)
+                //         .attr("x2", x)
+                //         .attr("y1", 0)
+                //         .attr("y2", 120)
+                //         .attr("stroke", "#ccc");
+
+
+                /* Emphasize y-axis */
+                chart.append("svg:line")
+                    .attr("x1", 0)
+                    .attr("x2", w * data.length)
+                    .attr("y1", h - .5)
+                    .attr("y2", h - .5)
+                    .attr("stroke", "#000");
+            };
         </script>
         {% endblock %}
