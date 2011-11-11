@@ -31,6 +31,24 @@ class Events(object):
             "data_%s" % self.cat_id, 0, count
         )
 
+    def _backfill_timeseries(self, delete=False):
+        """This is for pulling data out an event stream and putting in ts.
+
+        Args:
+            delete: bool, whether or not to delete the archived ts.
+        """
+        # Not sure this is an ideal solution, since it depends on archiving
+        # to work properly, which may be why we're backfilling in the
+        # first place.
+        events = self.redis_conn.zrange(
+                "data_" % self.cat_id, 0, -1, withscores=True)
+        cat_counter_id = "counter_%s" % (self.cat_id,)
+        cat_ts_id = "ts_%s" % (self.cat_id,)
+        if delete:
+            self.redis_conn.delete(cat_ts_id)
+        for _sig, ts in events:
+            self.redis_conn.hincrby(cat_counter_id, int(ts), 1)
+
 
 class Category(object):
 
