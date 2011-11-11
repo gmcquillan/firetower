@@ -4,6 +4,7 @@ redis_util
 
 the main queue handler for firetower.
 """
+import calendar
 from heapq import heappush, merge
 import json
 import hashlib
@@ -12,9 +13,16 @@ import time
 import redis
 from redis.exceptions import ConnectionError
 
+import category
 
 class MockRedis(object):
-    data = {}
+    _data = {}
+
+    def __init__(self, share_state=True):
+        if share_state:
+            self.data = self._data
+        else:
+            self.data = {}
 
     def hgetall(self, key):
         return self.data[key]
@@ -32,6 +40,9 @@ class MockRedis(object):
         rhash = self.data.get(root_key, {})
         rhash[sub_key] = value
         self.data[root_key] = rhash
+
+    def hdel(self, root_key, sub_key):
+        del self.data[root_key][sub_key]
 
     def keys(self):
         return self.data.keys()
@@ -65,20 +76,36 @@ class MockRedis(object):
         heappush(zheap, (score, value))
         self.data[name] = zheap
 
-    def _zrange_op(self, name, start, stop, reverse):
+    def _zrange_op(self, name, start, stop, reverse, withscores=False):
         zheap = self.data.get(name, [])
         if stop < 0:
             stop += len(zheap) + 1
         heap_list = list(merge(zheap))
         if reverse:
             heap_list.reverse()
-        return heap_list[start:stop]
+        if withscores:
+            return heap_list[start:stop]
+        else:
+            return [x[0] for x in heap_list]
 
-    def zrange(self, name, start, stop):
-        return self._zrange_op(name, start, stop, False)
+    def zrange(self, name, start, stop, withscores=False):
+        return self._zrange_op(name, start, stop, False, withscores=withscores)
 
-    def zrevrange(self, name, start, stop):
-        return self._zrange_op(name, start, stop, True)
+    def zrevrange(self, name, start, stop, withscores=False):
+        return self._zrange_op(name, start, stop, True, withscores=withscores)
+
+    def zrevrangebyscore(self, name, stop, start, withscores=True):
+        zheap = self.data.get(name, [])
+        heap_list = list(merge(zheap))
+        ret = []
+        for score, value in heap_list:
+            if score >= start and score <= stop:
+                ret.append([score, value])
+        if withscores:
+            return ret
+        else:
+            return [x[0] for x in ret]
+        return ret
 
 
 class Redis(object):
@@ -182,41 +209,9 @@ class Redis(object):
         error['ts'] = ts
         self.conn.zadd(cat_data_id,  json.dumps(error), ts)
 
-    def add_category(self, category):
+    def add_category(self, signature):
         """Add category to our sorted set of categories."""
-        self.conn.zadd('categories', category, 0)
-        self.add_category_id(self.construct_cat_id(category), category)
-
-    def add_category_id(self, id, category):
-        """Adds category metadata.
-
-        This method will set 3 metadata fields for the category hash:
-        * category is the full text of the original cateory.
-        * verbose_name is the human readable name for this category (used for
-            display purposes)
-        * threshold is the custom threshold for this category
-
-        The key values are in the form {category_hash}:{metadata_name} e.g.
-        a909ede39c09d84ed1839c5ca0f9b9876113770b:category
-
-        Args:
-            id: str, hash result of the category name.
-            category: str, the category name.
-        Returns:
-            bool, True if HSET created the new fields, False otherwise.
-        """
-        cat_fields = (
-            ("category", category), ("verbose_name", id), ("threshold", "")
-        )
-        ret = []
-
-        # TODO: Need a more elegant way to deal with rolling back from mid
-        # batch field creation failure
-        for key, value in cat_fields:
-            ret.append(
-                self.conn.hset('category_ids', "%s:%s" %(id, key), value)
-            )
-        return all(ret)
+        c = category.Category.create(self.conn, signature)
 
     def get_category_from_id(self, id):
         """Return the category name from a hash id.
@@ -247,6 +242,10 @@ class Redis(object):
             raise e
         else:
             return thresh
+
+    def get_verbose_name_from_id(self, id):
+        verbose_name = self.conn.hget("category_ids", )
+
 
     def get_categories(self):
         """Retrieve the full category set."""

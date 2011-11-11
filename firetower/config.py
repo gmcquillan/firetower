@@ -19,8 +19,9 @@ class Config(object):
 
     def __init__(self, conf_file):
         self.conf_path = conf_file
-        self.redis_host, self.redis_port, self.queue_key, self.alert_time,  \
-        self.class_thresh, self.timeslices = \
+        self.redis_host, self.redis_port, self.queue_key, self.alert_time, \
+        self.class_thresh, self.timeslices, self.archive_time, \
+        self.log_file, self.log_level = \
                 self.load_conf(file(self.conf_path, 'r'))
 
     def load_conf(self, conf_str):
@@ -47,9 +48,14 @@ class Config(object):
                   'class_thresh: 0.7,
                   'alert_time': 0.5,
                   'queue_key': 'incoming',
-                  'timeslices': [300]}
+                  'timeslices': [300],
+                  'archive_time': 5,
+                  'log_file': 'firetower-server.log',
+                  'log_level': 1,
+                 }
         Returns:
-            tuple of queue_key, timeslices, alert_time, error_signatures
+            tuple of queue_key, timeslices, alert_time, redis_host, redis_port,
+            archive_time.
         """
         redis_host = conf_dict.get('redis_host', 'localhost')
         redis_port = conf_dict.get('redis_port', 6379)
@@ -57,6 +63,9 @@ class Config(object):
         class_thresh = conf_dict.get('class_thresh', 0.5)
         timeslices = conf_dict.get('timeslices', [300])
         alert_time = conf_dict.get('alert_time', 1.0)
+        archive_time = conf_dict.get('archive_time', 5)
+        log_file = conf_dict.get('log_file', 'firetower-server.log')
+        log_level = conf_dict.get('log_level', 1)
 
         return (redis_host, redis_port, queue_key, alert_time,
-                class_thresh, timeslices)
+                class_thresh, timeslices, archive_time, log_file, log_level)

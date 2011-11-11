@@ -1,6 +1,9 @@
-import datetime
 import difflib
 import json
+
+from logbook import Logger
+
+log = Logger('Firetower-classifier')
 
 def longest_common_substr(s1, s2):
     """
@@ -88,6 +91,7 @@ class Levenshtein(Classifier):
 
         custom_thresh = self.redis.get_threshold_from_id(cat_id)
         thresh = custom_thresh if custom_thresh is not None else default_thresh
+        log.debug('Checking message using %s threshold value' % (str(thresh),))
 
         if not cat_errors:
             return None
@@ -97,8 +101,8 @@ class Levenshtein(Classifier):
             decode_error = json.loads(cat_error)
             cat_sig = decode_error['sig']
             if self.is_similar(cat_sig, sig, thresh):
-                # Make sure to use consistent category name.
                 cat_id = self.redis.construct_cat_id(cat)
+                log.debug('Found match for category id: %s' % (cat_id,))
                 self.write_errors(cat_id, error)
                 return True
 
@@ -120,5 +124,6 @@ class Levenshtein(Classifier):
         else:
             cat_sig = error['sig']
             cat_id = self.redis.construct_cat_id(cat_sig)
+            log.info('Adding new category with id: %s' % (cat_id,))
             self.redis.add_category(cat_sig)
             self.write_errors(cat_id, error)
