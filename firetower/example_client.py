@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import json
+import simplejson as json
 import time
 import random
 
@@ -24,7 +24,7 @@ FAKE_DATA = {'hostname': 'testmachine',
 class TestClient(client.Client):
     """Test Client emits random permutations on signatures to Firetower."""
 
-    def run(self, num_events=1000):
+    def run(self, num_events):
         for i in xrange(0, num_events):
             # Semi-randomly seed the 'sig' key in our fake errors
             FAKE_DATA['sig'] = random.choice(FAKE_SIGS) + str(random.randint(100, 999))
@@ -42,7 +42,7 @@ def main():
 
     parser.add_option(
         '-n', '--num', action='store', dest='num_events', type='int',
-         help='Number of events to send to Firetower.')
+        default=1000, help='Number of events to send to Firetower.')
 
     (options, args) = parser.parse_args()
 

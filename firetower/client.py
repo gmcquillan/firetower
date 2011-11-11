@@ -1,5 +1,5 @@
-import json
- 
+import simplejson as json
+
 from logbook import Logger
 from logbook import TimedRotatingFileHandler
 
