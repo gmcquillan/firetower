@@ -33,7 +33,11 @@ class Main(object):
         log.info('Started server with configuration file %s' % (options.conf_path))
 
         alert_time = None
-        queue = redis_util.Redis(host=conf.redis_host, port=conf.redis_port)
+        queue = redis_util.Redis(
+                host=conf.redis_host,
+                port=conf.redis_port,
+                redis_db=conf.redis_db)
+
         cls = classifier.Levenshtein(queue)
         alert = alerts.Alert(queue)
         last_archive = datetime.datetime.utcnow()

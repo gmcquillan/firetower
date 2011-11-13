@@ -19,9 +19,10 @@ class Config(object):
 
     def __init__(self, conf_file):
         self.conf_path = conf_file
-        self.redis_host, self.redis_port, self.queue_key, self.alert_time, \
-        self.class_thresh, self.timeslices, self.archive_time, \
-        self.log_file, self.log_level, self.imap_user, self.imap_host = \
+        self.redis_host, self.redis_port, self.redis_db, self.queue_key, \
+        self.alert_time, self.class_thresh, self.timeslices, \
+        self.archive_time, self.log_file, self.log_level, \
+        self.imap_user, self.imap_host = \
                 self.load_conf(file(self.conf_path, 'r'))
 
     def load_conf(self, conf_str):
@@ -45,6 +46,7 @@ class Config(object):
 
                 { 'redis_host: localhost,
                   'redis_port: 6379,
+                  'redis_db: 0,
                   'class_thresh: 0.7,
                   'alert_time': 0.5,
                   'queue_key': 'incoming',
@@ -59,6 +61,7 @@ class Config(object):
         """
         redis_host = conf_dict.get('redis_host', 'localhost')
         redis_port = conf_dict.get('redis_port', 6379)
+        redis_db = conf_dict.get('redis_db', 0)
         queue_key = conf_dict.get('queue_key', 'incoming')
         class_thresh = conf_dict.get('class_thresh', 0.5)
         timeslices = conf_dict.get('timeslices', [300])
@@ -69,6 +72,6 @@ class Config(object):
         imap_user = conf_dict.get('imap_user', '')
         imap_host = conf_dict.get('imap_host', '')
 
-        return (redis_host, redis_port, queue_key, alert_time,
+        return (redis_host, redis_port, redis_db, queue_key, alert_time,
                 class_thresh, timeslices, archive_time, log_file, log_level,
                 imap_user, imap_host)

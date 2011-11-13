@@ -18,8 +18,12 @@ class Client(object):
         self.conf = config.Config(conf)
         self.redis_host = self.conf.redis_host
         self.redis_port = self.conf.redis_port
+        self.redis_db = self.conf.redis_db
         self.queue_key = self.conf.queue_key
-        self.queue = redis_util.Redis(host=self.redis_host, port=self.redis_port)
+        self.queue = redis_util.Redis(
+                host=self.redis_host,
+                port=self.redis_port,
+                redis_db=self.redis_db)
 
     def emit(self, event):
         """Emit a message to firetower.

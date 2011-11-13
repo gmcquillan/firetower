@@ -124,7 +124,7 @@ class Redis(object):
         cat_id.update(category)
         return cat_id.hexdigest()
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, redis_db):
         """Initialize Redis Connections.
 
         Args:
@@ -132,7 +132,7 @@ class Redis(object):
         """
         try:
             self.conn = redis.Redis(
-                host=host, port=port, db=0)
+                host=host, port=port, db=redis_db)
             self.conn.ping()
         except ConnectionError:
             self.conn = MockRedis()

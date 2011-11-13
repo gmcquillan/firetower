@@ -5,6 +5,7 @@
 # Redis Server
 redis_host: localhost
 redis_port: 6379
+redis_db: 1
 
 # Queue source for classification
 queue_key: incoming
