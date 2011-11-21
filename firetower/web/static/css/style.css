@@ -1,6 +1,6 @@
 body {
     background:  #eee;
-    font-family: Georgia, "Times New Roman", Times, serif;
+    font-family: Helvetica, Arial, sans-serif;
     margin: 0;
     padding: 0;
 }
@@ -10,11 +10,21 @@ p {
     padding-top: 6px;
 }
 
+a {
+    color: #000;
+    text-decoration: none;
+}
+
+a:hover {
+    background-color: #ccf;
+}
+
 #container {
     background-color: #fff; 
     margin: auto;
     width: 80%;   
     padding: 25px;
+    min-height: 100%;
     /* Shadow */
     -moz-box-shadow: 0px 0px 25px #ccc;
     -webkit-box-shadow: 0px 0px 25px #ccc;
@@ -22,8 +32,7 @@ p {
 }
 
 #title {
-    padding-top: 40px;
-    padding-bottom: 50px;
+    padding: 40px 0 20px 20px;
 }
 
 #title h1 {
@@ -36,74 +45,125 @@ p {
     padding: 20px 0;
 }
 
-#placeholder {
-    margin-left: 200px;
-    min-height: 300px;
-}
-
-.chart {
-    min-height: 100px;
+#loadingMsg {
+    display: hidden;
+    width: inherit;
+    margin: auto;
+    text-align: center;
+    font-style: italic;
+    padding: 10px;
+    background-color: #ccf;
     border: 1px solid #ccc;
-    margin-bottom: 70px;
+}
+/** Aggregate chart **/ 
+
+#aggregatePlaceholder {
+    margin: auto;
+    width: 960px;
+    height: 400px;
+    font-family: Myriad Pro, Helvetica, Arial, sans-serif;
 }
 
-.chart rect {
-    stroke: white;
-    /*fill: steelblue;*/
+/** Individual category chart **/
+
+#categoryPlaceholder {
+    margin-left: 20px;
+    width: 800px;
+    height: 400px;
+    font-family: Myriad Pro, Helvetica, Arial, sans-serif;
 }
 
-.chart text {
-    font: 10px sans-serif;
+#catId {
+    display: none;
 }
+
+/** Category/totals list **/
 
 #key {
-    float: left;
     font-family: Helvetica, Arial, sans-serif;
+    width: 935px;
+    margin: 25px auto;
+    padding-left: 17px;
 }
 
-#key ul {
-    height: 90px;
-    width: 150px;
-    margin: 0 20px 163px 0;
-    padding: 0;
-    list-style-type: none;
-}
-
-#key ul li.catName {
-    font-weight: bold;
-    margin-top: -30px;
-}
-
-#key ul li.catTotal {
-    font-size: 1.6em;
-    font-weight: bold;
-    background-color: #ccf;
-    padding: 10px;
-    margin-top: 10px;
-    border: 1px solid #ccc;
-}
-
-#legend {
-    border: 1px solid #666;
-    font-family: Helvetica, Arial, sans-serif;
-    margin-top: 20px;
-}
-
-#legend ul {
-    margin: 0;
-    list-style-type: none;
-    padding: 5px;
-    border-bottom: 1px solid #99c;
+#key .keyEntry {
+    padding: 8px;
 }
 
 /* Zebra striping */
-#legend ul:nth-child(2n+1) {
+#key .keyEntry:nth-child(2n+1) {
+    background-color: #eee;
+}
+
+#key div.catName a {
+    text-decoration: none;
+    color: #000;
+}
+
+#key .keyEntry:hover {
     background-color: #ccf;
-
 }
 
-#legend ul li {
-    display: inline;
-    padding-left: 30px;
+#key div.catTotal {
+    float: right;
+    text-align: right;
 }
 
+#key div.catTotal h1 {
+    font-size: 1.3em;
+    font-weight: bold;
+    margin: -2px 0 0 0;
+}
+
+/** Category chart key/controls **/
+
+#categorykey {
+    border: 1px solid #ccc;
+    padding: 15px;
+    float: right;
+    min-width: 250px;
+    margin-top: 6px;
+}
+
+#categoryKey h3 {
+    font-weight: normal;
+    font-size: .9em;
+    color: #666;
+    margin: 0 0 5px 0;
+}
+
+#categoryKey div.catTotal {
+    background-color: #ccf;
+    padding: 10px;
+    border: 1px solid #ccc;
+    height: 30px;
+    text-align: right;
+}
+
+#categoryKey div.catTotal h1  {
+    font-size: 1.6em;
+    font-weight: bold;
+    margin: 0;
+}
+
+#categoryKey #controls {
+    margin-top: 15px;
+    font-size: .9em;
+    font-style: italic;
+    color: #666;
+}
+
+#returnToAgg {
+    margin-top: -25px;
+    float: right;
+}
+
+#returnToAgg a {
+    font-size: .8em;
+}
+
+/** Flot styles **/
+
+.tickLabel {
+    font-size: .9em;
+}

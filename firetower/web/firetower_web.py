@@ -23,6 +23,11 @@ def aggregate():
     return render_template(
         "aggregate.html")
 
+@app.route("/category/<cat_id>")
+def cat_chart(cat_id=None):
+    return render_template(
+        "category-chart.html", cat_id=cat_id)
+
 @app.route("/api/categories/")
 def cat_route():
     redis = redis_util.Redis(REDIS_HOST, REDIS_PORT).conn

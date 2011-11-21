@@ -3,47 +3,59 @@
             <h1> Firetower - Total Errors per Category </h1>
         {% endblock %}
         {% block content %}
-        <div id="key"></div>
-        <div id="placeholder"></div>
-        <!--div id="legend"></div-->
+        <div id="aggregate">
+            <div id="aggregatePlaceholder">
+                <div id="loadingMsg">Loading...</div>
+            </div>
+            <div id="key"></div>
+        </div>
 
         <script type="text/javascript">
             $(function () {
-                // Draw initial chart
-                getTimeseriesData();
-            });
 
-            getTimeseriesData = function() {
+            sampleFlot = function() {
+                //console.log('sampleFlot fired');
+                toPlot = 
+                [ { label: "Foo", data: [ [10, 1], [17, -14], [30, 5] ] },
+                { label: "Bar", data: [ [11, 13], [19, 11], [30, -7] ] } ]
+                //console.log(toPlot);
+                $.plot($("#placeholder"), toPlot);
+            }
+
+            getAggregateData = function() {
+                $("#loadingMsg").show();
+                console.log('date:'+Math.round(new Date().getTime()/1000.0));
                 var handler = $.ajax({
                     url: "/api/categories/timeseries",
                     success: function(returnedData, httpStatus, xhr){
                         var jsonData = JSON.parse(returnedData);
-                        var colorIndex = 0;
+                        //console.log(jsonData);
 
-                        /* Add data to chart */
-                        for (cat in jsonData) {
-                            var timeData = jsonData[cat];
-                            var allData = new Array();
-                            var catTotal = 0;
+                        // Empty array to hold chart data
+                        var chartData = new Array();
                     
-                            for (var i=0, arr; arr=timeData[i]; i++) {
-                                allData.push( { time: arr[0] , value: arr[1] } )
+                        for (cat in jsonData) {
+                            // Store category name & data for chart
+                            chartData.push( { label: cat, data: jsonData[cat] } )
+
+                            // Sum total instances per category
+                            var catTotal = 0;
+                            for (var i=0, arr; arr=jsonData[cat][i]; i++) {
                                 catTotal += arr[1];
                             }
 
-                            dynamicChart(allData, colorIndex);
-
-                            // Increment color index to draw each dataset in a new color
-                            // TODO: automatically interpolate new colors using d3 interpolation
-                            colorIndex += 1;
-
-                            // Get human readable category name
+                            // Get human-readable category name
                             getCategoryName(cat, catTotal);
-
-                            //var dataCount = timeData.length;
                         }
+
+                        drawAggChart(chartData);
                     }
                 });
+            }
+
+            drawAggChart = function(chartData) {
+                $("#loadingMsg").hide();
+                $.plot($("#aggregatePlaceholder"), chartData );
             }
 
             getCategoryName = function(catId, catTotal) {
@@ -52,124 +64,25 @@
                     success: function(jsonData, httpStatus, xhr){
                         var catData = JSON.parse(jsonData);
                         var catName = catData[catId].human_name;
-                        
-                        // Add category name to legend
-                        $("#key").append('<ul><li class="catName">'+catName+'</li><li class="catTotal">'+catTotal+'</li></ul>')
+                        writeAggKey(catId, catName, catTotal);
                     }
                 });
             }
 
-            randomColor = function() {
-                function c() {
-                    return ('0' + Math.floor(Math.random() * 256).toString(16)).substr(-2);
-                }
-                return '#' + c() + c() + c();
-            };
+            // Write key for aggregate chart
+            writeAggKey = function(catId, catName, catTotal) {
 
-            dynamicChart = function(jsonData, colorIndex) {
+                // Add category name & totals to key
+                $("#key").append(
+                    '<div class="keyEntry" id="'+catId+'"></div>')
 
-                // // Generate random walk data
-                // var t = 1297110663, // start time
-                //     v = 70, // start value
-                //     data = d3.range(33).map(next); // starting dataset
-                
-                // //console.log(data)
-                
-                // function next() {
-                //     return {
-                //     time: ++t,
-                //     value: v = ~~Math.max(10, Math.min(90, v + 10 * (Math.random() - .5)))
-                //     };
-                // }
+                $("#"+catId).append('<div class="catTotal"><h1>'+catTotal+'</h1></div><div class="catName"><a href="/category/'+catId+'">'+catName+'</a></div>')
+            }
 
-                // setInterval(function() {
-                //     data.shift();
-                //     data.push(next());
-                //     redraw();
-                // }, 1500);
+            // Get default timeseries data for all categories 
+            // & draw chart
+            getAggregateData();
 
-                var data = jsonData;
-                //console.log(data);
-
-                /* Cheating with a static color array for now */
-                var colorArray = ['#99c', '#669', '#336', '#009', '#33c', '#06c'];
-
-                /* Set maximum bar dimensions */
-                var w = 20,
-                    h = 150;
-
-                var x = d3.scale.linear()
-                    .domain([0, 1])
-                    .range([0, w]);
-
-                var y = d3.scale.linear()
-                    .domain([0, 40])
-                    .rangeRound([0, h]);
-                
-                /* Create chart */
-                var chart = d3.select("#placeholder")
-                    .append("svg:svg")
-                        .attr("class", "chart")
-                        //.attr("width", w * data.length - 1)
-                        .attr("height", h)
-                    // .append("svg:g")
-                    //     .attr("transform", "translate(20, 0)");
-                
-                /* Add value lines */
-                chart.selectAll("line")
-                    .data(y.ticks(5))
-                    .enter().append("svg:line")
-                        .attr("x1", 0)
-                        .attr("x2", 840)
-                        .attr("y1", y)
-                        .attr("y2", y)
-                        .attr("stroke", "#ccc");
-                
-                // /* Add value line labels */
-                // chart.selectAll("text.rule")
-                //     .data(y.ticks(5))
-                //     .enter().append("svg:text")
-                //         .attr("class", "rule")
-                //         .attr("x", 0)
-                //         .attr("y", y)
-                //         .attr("text-anchor", "end")
-                //         .attr("color", "#000")
-                //         .text(String);
-
-                /* Draw bars */
-                chart.selectAll("rect")
-                    .data(data)
-                    .enter().append("svg:rect")
-                        .attr("x", function(d, i) { return x(i) - .5; })
-                        .attr("y", function(d) { return h - y(d.value) - .5; })
-                        .attr("width", w)
-                        .attr("height", function(d) { return y(d.value); })
-                        .attr("fill", colorArray[colorIndex])
-                        .transition()
-                            .duration(1000)
-                            .attr("x", function(d, i) { return x(i) - .5; })
-                
-                function redraw(data) {
-                    console.log('redraw fired');
-                    console.log(data);
-                    var rect = chart.selectAll("rect")
-                        .data(data)
-                        .transition()
-                            .duration(1000)
-                            .attr("y", function(d) { return h - y(d.value) - .5; })
-                            .attr("height", function(d) { return y(d.value); });
-                }
-
-                // setInterval(function() {
-                //     var handler = $.ajax({
-                //     url: "/api/categories/timeseries",
-                //     success: function(returnedData, httpStatus, xhr){
-                //         var newData = JSON.parse(returnedData);
-                //         redraw(newData);
-                //         }
-                //     });
-                // }, 2000);
-
-            };
+            });
         </script>
         {% endblock %}
