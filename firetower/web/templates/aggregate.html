@@ -15,7 +15,7 @@
 
             sampleFlot = function() {
                 //console.log('sampleFlot fired');
-                toPlot = 
+                toPlot =
                 [ { label: "Foo", data: [ [10, 1], [17, -14], [30, 5] ] },
                 { label: "Bar", data: [ [11, 13], [19, 11], [30, -7] ] } ]
                 //console.log(toPlot);
@@ -33,7 +33,7 @@
 
                         // Empty array to hold chart data
                         var chartData = new Array();
-                    
+
                         for (cat in jsonData) {
                             // Store category name & data for chart
                             chartData.push( { label: cat, data: jsonData[cat] } )
@@ -55,7 +55,19 @@
 
             drawAggChart = function(chartData) {
                 $("#loadingMsg").hide();
-                $.plot($("#aggregatePlaceholder"), chartData );
+                $.plot(
+                    $("#aggregatePlaceholder"),
+                    chartData,
+                    {
+                        series: {
+                            lines: { show: true },
+                            points: { show: true }
+                        },
+                        xaxis: { mode: "time" },
+                        yaxis: { min: 1 },
+                        grid: { hoverable: true, clickable: true },
+                    }
+                );
             }
 
             getCategoryName = function(catId, catTotal) {
@@ -79,9 +91,73 @@
                 $("#"+catId).append('<div class="catTotal"><h1>'+catTotal+'</h1></div><div class="catName"><a href="/category/'+catId+'">'+catName+'</a></div>')
             }
 
-            // Get default timeseries data for all categories 
+            // Get default timeseries data for all categories
             // & draw chart
             getAggregateData();
+
+            function showTooltip(x, y, contents) {
+                $('<div id="tooltip">' + contents + '</div>').css( {
+                    position: 'absolute',
+                    display: 'none',
+                    top: y + 5,
+                    left: x + 5,
+                    border: '1px solid #fdd',
+                    padding: '2px',
+                    'background-color': '#fee',
+                    opacity: 0.80
+                }).appendTo("body").fadeIn(200);
+            }
+
+            var previousPoint = null;
+            $("#aggregatePlaceholder").bind("plothover", function (event, pos, item) {
+                $("#x").text(pos.x.toFixed(2));
+                $("#y").text(pos.y.toFixed(2));
+
+                if (item) {
+                    if (previousPoint != item.dataIndex) {
+                        previousPoint = item.dataIndex;
+
+                        $("#tooltip").remove();
+                        var x = item.datapoint[0].toFixed(2),
+                            y = item.datapoint[1].toFixed(2);
+
+                        var catData = "";
+                        $.ajax({
+                            async: false,
+                            url: "/api/categories/",
+                            success: function(jsonData, httpStatus, xhr){
+                                catData = JSON.parse(jsonData);
+                            }
+                        });
+
+                        var date = new Date(Math.floor(x));
+                        var date_str = date.getFullYear() + "/" + date.getMonth() + "/" + date.getDay();
+                        var time_str = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+                        for(var cat in catData){
+                            if (item.series.label == cat){
+                                cat_name = catData[cat]["human_name"];
+                            }
+                        }
+                        var tooltip_msg = "At " + date_str + " " + time_str + " " + " category " + cat_name  + " got " + y + " hits"
+
+                        showTooltip(
+                            item.pageX, item.pageY,
+                            tooltip_msg
+                        );
+                    }
+                }
+                else {
+                    $("#tooltip").remove();
+                    previousPoint = null;
+                }
+            });
+
+            $("#aggregatePlaceholder").bind("plotclick", function (event, pos, item) {
+                if (item) {
+                    $("#clickdata").text("You clicked point " + item.dataIndex + " in " + item.series.label + ".");
+                    plot.highlight(item.series, item.datapoint);
+                }
+            });
 
             });
         </script>
