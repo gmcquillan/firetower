@@ -62,13 +62,19 @@ def base_timeseries(cat_id=None):
             start = end-DEFAULT_TIME_SLICE
 
         if cat_id:
-            return category.Category(redis, cat_id=cat_id).timeseries.range(
-                start, end)
+            return [
+                (x.timestamp*1000, x.count) for x in
+                category.Category(redis, cat_id=cat_id).timeseries.range(
+                    start, end
+                )
+            ]
         else:
             time_series = {}
             for cat in category.Category.get_all_categories(redis):
-                time_series[cat.cat_id] = cat.timeseries.range(
-                    start, end)
+                time_series[cat.cat_id] = [
+                (x.timestamp*1000, x.count) for x in
+                cat.timeseries.range(start, end)
+            ]
             return time_series
 
 
