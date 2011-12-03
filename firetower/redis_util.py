@@ -124,7 +124,7 @@ class Redis(object):
         cat_id.update(category)
         return cat_id.hexdigest()
 
-    def __init__(self, host, port, redis_db):
+    def __init__(self, host, port, redis_db=0):
         """Initialize Redis Connections.
 
         Args:
