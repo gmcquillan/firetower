@@ -98,6 +98,14 @@ a:hover {
     padding: 8px;
 }
 
+#legend {
+    font-family: Helvetica, Arial, sans-serif;
+    width: 935px;
+    margin: 25px auto;
+    padding-left: 17px;
+}
+
+
 /* Zebra striping */
 #key .keyEntry:nth-child(2n+1) {
     background-color: #eee;
