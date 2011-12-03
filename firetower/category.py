@@ -27,10 +27,36 @@ class TimeSeries(object):
 
         """
         ret = []
+
+        slice_dict = {}
+        time_slice = 5*60
+
         for ts_entry in ts_list:
+            ts = int(ts_entry[1])
+            count = int(ts_entry[0].split(":")[1])
+            key = ts/time_slice
+            slice_dict[key] = slice_dict.get(key, 0) + count
+
+        keys = slice_dict.keys()
+        keys.sort()
+        for i in range(keys[0], keys[-1]):
+            if i not in slice_dict:
+                slice_dict[i] = 0
+        keys = slice_dict.keys()
+        keys.sort()
+
+        for key in keys:
+            ret.append(TSTuple(key*time_slice, slice_dict[key]))
+        return ret
+
+
+
+        for ts_entry in ts_list:
+            print "ts_entry", ts_entry
+            ts = int(ts_entry[1])
             ret.append(
                 TSTuple(
-                    int(ts_entry[1]),
+                    ts,
                     int(ts_entry[0].split(":")[1])
                 )
             )
@@ -58,9 +84,11 @@ class TimeSeries(object):
         a number of seconds since epoch and VALUE is the number of times the
         category appeared in that second.
         """
-        return self.convert_ts_list(self.redis_conn.zrevrangebyscore(
-            "ts_%s" % (self.cat_id), end, start, withscores=True
-        ))
+        return self.convert_ts_list(
+            self.redis_conn.zrevrangebyscore(
+                "ts_%s" % (self.cat_id), end, start, withscores=True
+            )
+        )
 
     @staticmethod
     def generate_ts_value(ts, count):
