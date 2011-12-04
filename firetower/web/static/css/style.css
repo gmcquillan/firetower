@@ -20,9 +20,9 @@ a:hover {
 }
 
 #container {
-    background-color: #fff; 
+    background-color: #fff;
     margin: auto;
-    width: 80%;   
+    width: 80%;
     padding: 25px;
     min-height: 100%;
     /* Shadow */
@@ -55,7 +55,7 @@ a:hover {
     background-color: #ccf;
     border: 1px solid #ccc;
 }
-/** Aggregate chart **/ 
+/** Aggregate chart **/
 
 #aggregatePlaceholder {
     margin: auto;
@@ -75,6 +75,14 @@ a:hover {
 
 #catId {
     display: none;
+}
+
+/** Chart legend **/
+#legend {
+    font-family: Helvetica, Arial, sans-serif;
+    width: 935px;
+    margin: 25px auto;
+    padding-left: 17px;
 }
 
 /** Category/totals list **/

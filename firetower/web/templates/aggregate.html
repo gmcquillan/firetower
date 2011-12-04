@@ -7,48 +7,90 @@
             <div id="aggregatePlaceholder">
                 <div id="loadingMsg">Loading...</div>
             </div>
+            <div id="legend"></div>
             <div id="key"></div>
         </div>
 
         <script type="text/javascript">
-            $(function () {
+            var timeseriesData = new Array();
+            // Hashmap holding the currently graphed timeseries
+            var graphedData = new Array();
 
-            sampleFlot = function() {
-                //console.log('sampleFlot fired');
-                toPlot =
-                [ { label: "Foo", data: [ [10, 1], [17, -14], [30, 5] ] },
-                { label: "Bar", data: [ [11, 13], [19, 11], [30, -7] ] } ]
-                //console.log(toPlot);
-                $.plot($("#placeholder"), toPlot);
+            var addSeries = function(){
+                toggleSeries($(this), true);
+                return false;
             }
+
+            var killSeries = function(){
+                toggleSeries($(this), false);
+                return false;
+            }
+
+            var toggleSeries = function(link, add){
+                var link_id = link.attr("id");
+                var cat_id = link_id.replace("_link", "")
+                graphedData[cat_id] = add ? timeseriesData[cat_id] : new Array();
+                loadGraphData();
+
+                for (cat_id in graphedData){
+                    var link_id = "#" + cat_id + "_link";
+                    var new_link = $(link_id);
+                    var visible = graphedData[cat_id].length > 0;
+                    new_link.html(visible ? "-" : "+");
+                    if (!visible){
+                        new_link.attr("class", "addSeries")
+                    }
+                }
+
+                $('.addSeries').unbind('click')
+                $('.killSeries').unbind('click')
+                $('.addSeries').bind('click', addSeries)
+                $('.killSeries').bind('click', killSeries)
+                $("#tooltip").remove();
+                return false;
+            }
+
+            var buildLabel = function(label, series) {
+                var killSeries = "<a id='" + label + "_link' class='killSeries' href='#'>-</a>"
+                return label + "&nbsp;" + killSeries;
+            }
+
+            var loadGraphData = function(){
+                // Empty array to hold chart data
+                var chartData = new Array();
+                for (cat in graphedData) {
+                    // Store category name & data for chart
+                    chartData.push(
+                        { label: cat, data: graphedData[cat] }
+                    )
+                }
+
+                drawAggChart(chartData);
+            }
+
+            $(function () {
 
             getAggregateData = function() {
                 $("#loadingMsg").show();
-                console.log('date:'+Math.round(new Date().getTime()/1000.0));
                 var handler = $.ajax({
                     url: "/api/categories/timeseries",
                     success: function(returnedData, httpStatus, xhr){
-                        var jsonData = JSON.parse(returnedData);
-                        //console.log(jsonData);
-
-                        // Empty array to hold chart data
-                        var chartData = new Array();
-
-                        for (cat in jsonData) {
-                            // Store category name & data for chart
-                            chartData.push( { label: cat, data: jsonData[cat] } )
+                        timeseriesData = JSON.parse(returnedData);
+                        for (cat in timeseriesData) {
+                            graphedData[cat] = timeseriesData[cat];
 
                             // Sum total instances per category
                             var catTotal = 0;
-                            for (var i=0, arr; arr=jsonData[cat][i]; i++) {
+                            for (var i=0, arr; arr=timeseriesData[cat][i]; i++) {
                                 catTotal += arr[1];
                             }
 
                             // Get human-readable category name
                             getCategoryName(cat, catTotal);
                         }
-
-                        drawAggChart(chartData);
+                        loadGraphData();
+                        $('.addSeries').bind('click', addSeries)
+                        $('.killSeries').bind('click', killSeries)
                     }
                 });
             }
@@ -66,6 +108,11 @@
                         xaxis: { mode: "time" },
                         yaxis: { min: 1 },
                         grid: { hoverable: true, clickable: true },
+                        legend: {
+                            labelFormatter: buildLabel,
+                            container: "#legend",
+                            noColumns: 3
+                        }
                     }
                 );
             }
@@ -149,13 +196,6 @@
                 else {
                     $("#tooltip").remove();
                     previousPoint = null;
-                }
-            });
-
-            $("#aggregatePlaceholder").bind("plotclick", function (event, pos, item) {
-                if (item) {
-                    $("#clickdata").text("You clicked point " + item.dataIndex + " in " + item.series.label + ".");
-                    plot.highlight(item.series, item.datapoint);
                 }
             });
 
