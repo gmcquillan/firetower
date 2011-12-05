@@ -12,7 +12,8 @@ from firetower import  redis_util
 
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
-REDIS = redis_util.Redis(REDIS_HOST, REDIS_PORT)
+REDIS_DB = 1
+REDIS = redis_util.Redis(REDIS_HOST, REDIS_PORT, REDIS_DB)
 
 DEFAULT_TIME_SLICE = 300000
 
@@ -30,7 +31,7 @@ def cat_chart(cat_id=None):
 
 @app.route("/api/categories/")
 def cat_route():
-    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT).conn
+    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT, REDIS_DB).conn
 
     ret = {}
     for cat in category.Category.get_all_categories(redis):
@@ -40,7 +41,7 @@ def cat_route():
 
 
 def base_timeseries(cat_id=None):
-    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT).conn
+    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT, REDIS_DB).conn
     get_all = request.args.get("all")
     start = request.args.get("start")
     end = request.args.get("end")
