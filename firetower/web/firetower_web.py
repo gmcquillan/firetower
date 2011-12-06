@@ -2,7 +2,9 @@ import time
 import calendar
 
 import flask
-from flask import Flask, render_template
+from flask import Flask
+from flask import abort
+from flask import render_template
 from flask import request
 
 from dateutil import parser
@@ -21,17 +23,18 @@ app = Flask(__name__)
 
 @app.route("/aggregate")
 def aggregate():
-    return render_template(
-        "aggregate.html")
+    return render_template("aggregate.html")
 
 
-@app.route("/category/new")
+@app.route("/api/category/new", methods=["POST"])
 def cat_new():
     """For creating new signature categories manually."""
 
-    sig = request.args.get("sig")
-    thresh = request.args.get("thresh")
-    human = request.args.get("human")
+    sig = request.form.get("sig", None)
+    if not sig:
+        abort(500)
+    thresh = request.form.get("thresh")
+    human = request.form.get("human")
     conn = REDIS.conn
     new_cat = category.Category.create(conn, sig)
     if thresh:

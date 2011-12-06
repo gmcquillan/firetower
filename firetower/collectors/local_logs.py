@@ -39,10 +39,10 @@ def main():
             help='Path to watch for logfile changes.')
 
     (options, args) = parser.parse_args()
-    conf = config.Config(options.conf_path)
 
-    client = LocalLogClient(conf)
-    print "about to get dirty with logwatcher"
+    client = LocalLogClient(options.conf_path)
     logwatcher = log_watcher.LogWatcher(options.log_path, client.collect)
-    logwatcher.loop()
+    logwatcher.loop(async=True)
 
+if __name__ == '__main__':
+    main()

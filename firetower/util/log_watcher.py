@@ -72,6 +72,7 @@ class LogWatcher(object):
         while 1:
             self.update_files()
             for fid, file in list(self.files_map.iteritems()):
+                print "going to read file %s" % (file,)
                 self.readfile(file)
             if async:
                 return
@@ -161,6 +162,9 @@ class LogWatcher(object):
 
     def readfile(self, file):
         lines = file.readlines()
+        # TODO(gavin): there's definitely something wrong with this code.
+        # File position doesn't seem to change after initial read to EOF
+        #print file.tell()
         if lines:
             self.callback(file.name, lines)
 
