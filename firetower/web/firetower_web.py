@@ -2,7 +2,9 @@ import time
 import calendar
 
 import flask
-from flask import Flask, render_template
+from flask import Flask
+from flask import abort
+from flask import render_template
 from flask import request
 
 from dateutil import parser
@@ -10,6 +12,7 @@ from dateutil import parser
 from firetower import category
 from firetower import  redis_util
 
+# These items should be picked up from the config.yaml
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
 REDIS_DB = 1
@@ -21,13 +24,33 @@ app = Flask(__name__)
 
 @app.route("/aggregate")
 def aggregate():
-    return render_template(
-        "aggregate.html")
+    return render_template("aggregate.html")
+
+
+@app.route("/api/category/new", methods=["POST"])
+def cat_new():
+    """For creating new signature categories manually."""
+
+    sig = request.form.get("sig", None)
+    if not sig:
+        abort(500)
+    thresh = request.form.get("thresh")
+    human = request.form.get("human")
+    conn = REDIS.conn
+    new_cat = category.Category.create(conn, sig)
+    if thresh:
+        new_cat._set_threshold(thresh)
+    if human:
+        new_cat._set_human(human)
+
+    return flask.jsonify(new_cat.to_dict())
+
 
 @app.route("/category/<cat_id>")
 def cat_chart(cat_id=None):
     return render_template(
         "category-chart.html", cat_id=cat_id)
+
 
 @app.route("/api/categories/")
 def cat_route():

@@ -17,8 +17,8 @@ class ErrorSigIssue(ConfigError):
 class Config(object):
     """Configuraiton Object - read and store conf values."""
 
-    def __init__(self, conf_file):
-        self.conf_path = conf_file
+    def __init__(self, conf_path):
+        self.conf_path = conf_path
         self.redis_host, self.redis_port, self.redis_db, self.queue_key, \
         self.alert_time, self.class_thresh, self.timeslices, \
         self.archive_time, self.log_file, self.log_level, \
