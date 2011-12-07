@@ -23,7 +23,10 @@ class Client(object):
         self.queue = redis_util.Redis(
                 host=self.redis_host,
                 port=self.redis_port,
-                redis_db=self.redis_db)
+                db=self.redis_db)
+
+    def push_event(self, event):
+        self.queue.lpush(self.queue_key, event)
 
     def emit(self, event):
         """Emit a message to firetower.
@@ -42,5 +45,5 @@ class Client(object):
             payload = {"sig": event}
             event = json.dumps(payload)
 
-        self.queue.push(self.queue_key, event)
+        self.push_event(event)
         log.debug("Pushed event %s to firetower" % (event,))

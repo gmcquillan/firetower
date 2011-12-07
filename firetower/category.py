@@ -1,6 +1,9 @@
 import calendar
 from collections import namedtuple
+import hashlib
+import simplejson as json
 import re
+import time
 
 import redis_util
 
@@ -127,6 +130,15 @@ class Events(object):
         self.cat_id = cat_id
         self.redis_conn = redis_conn
 
+    def add_event(self, event, timestamp=None, ts_increment=True):
+        if timestamp is None:
+            timestamp = int(time.time())
+
+        event['ts'] = timestamp
+        self.redis_conn.zadd("data_" + self.cat_id,  json.dumps(event), timestamp)
+        if ts_increment:
+            self.redis_conn.hincrby("counter_" + self.cat_id, timestamp, 1)
+
     def last_x(self, count):
         self.redis_conn.zrevrange(
             "data_%s" % self.cat_id, 0, count
@@ -199,7 +211,7 @@ class Category(object):
         a909ede39c09d84ed1839c5ca0f9b9876113770b:category
         """
         redis_conn.zadd("categories", signature, 0)
-        cat_id = redis_util.Redis.construct_cat_id(signature)
+        cat_id = cls.construct_cat_id(signature)
         cat_fields = (
             (cls.SIGNATURE_KEY, signature), (cls.HUMAN_NAME_KEY, cat_id),
             (cls.THRESHOLD_KEY, ""),
@@ -221,6 +233,19 @@ class Category(object):
                     cat_id=key.replace(":" + cls.SIGNATURE_KEY, "")
                 ))
         return categories
+
+    @staticmethod
+    def construct_cat_id(signature):
+        """Create Category ID hash from a category signature.
+
+        Args:
+            signature: str, signature of category.
+        Returns:
+            str, sha1 hash.
+        """
+        cat_id = hashlib.sha1()
+        cat_id.update(signature)
+        return cat_id.hexdigest()
 
     def _get_key(self, key):
         return self.conn.hget(
