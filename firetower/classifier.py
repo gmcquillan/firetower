@@ -3,6 +3,8 @@ import json
 
 from logbook import Logger
 
+from firetower import category
+
 log = Logger('Firetower-classifier')
 
 def longest_common_substr(s1, s2):
@@ -86,25 +88,20 @@ class Levenshtein(Classifier):
         """
         sig = error['sig']
 
-        cat_errors = self.redis.get_latest_data(cat)
-        cat_id = self.redis.construct_cat_id(cat)
-
-        custom_thresh = self.redis.get_threshold_from_id(cat_id)
+        custom_thresh = cat.threshold
         thresh = custom_thresh if custom_thresh is not None else default_thresh
         log.debug('Checking message using %s threshold value' % (str(thresh),))
 
-        if not cat_errors:
-            return None
-        for cat_error in cat_errors:
-            if not cat_error:
-                continue
-            decode_error = json.loads(cat_error)
-            cat_sig = decode_error['sig']
-            if self.is_similar(cat_sig, sig, thresh):
-                cat_id = self.redis.construct_cat_id(cat)
-                log.debug('Found match for category id: %s' % (cat_id,))
-                self.write_errors(cat_id, error)
-                return True
+        exemplar_str = None
+        last_data = cat.events.last_x(1)
+        if not last_data:
+            exemplar_str = cat.signature
+        else:
+            exemplar_str = json.loads(last_data)['sig']
+
+        if self.is_similar(sig, exemplar_str, thresh):
+            log.debug('Found match for category id: %s' % (cat_id,))
+            return True
 
     def classify(self, error, thresh):
         """Determine which category, if any, a signature belongs to.
@@ -116,11 +113,10 @@ class Levenshtein(Classifier):
             error: dict of json payload with a 'sig' key.
             thresh: float, classification threshold to match.
         """
-        categories = (cat for cat in self.redis.get_categories())
-        # Let's see if our message matches a category
+        categories = category.Category.get_all_categories(self.redis.conn)
         for cat in categories:
             if self.check_message(cat, error, thresh):
-                break
+                self.write_errors(cat.cat_id, error)
         else:
             cat_sig = error['sig']
             cat_id = self.redis.construct_cat_id(cat_sig)
