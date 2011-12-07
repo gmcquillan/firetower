@@ -31,6 +31,9 @@ class TimeSeries(object):
         slice_dict = {}
         time_slice = 5*60
 
+        if not ts_list:
+            return []
+
         for ts_entry in ts_list:
             ts = int(ts_entry[1])
             count = int(ts_entry[0].split(":")[1])
