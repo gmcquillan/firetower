@@ -5,6 +5,7 @@ import simplejson as json
 import re
 import time
 
+import classifier
 import redis_util
 
 TSTuple = namedtuple("TimeSeriesTuple", ("timestamp", "count"))
@@ -32,7 +33,7 @@ class TimeSeries(object):
         ret = []
 
         slice_dict = {}
-        time_slice = 5*60
+        time_slice = 1#5*60
 
         if not ts_list:
             return []
@@ -101,23 +102,35 @@ class TimeSeries(object):
         """Turn a timestamp and cat count into a value for storage in a set"""
         return "%s:%s" % (ts, count)
 
-    @classmethod
-    def archive_cat_counts(cls, conn, cat_id, start_time):
+    def archive_cat_counts(self, start_time, preserve=False):
         """Move everything before start_time into a Sorted Set.
 
         Args:
-            conn: Redis connection
-            cat_id: The category hash ID
             start_time: int, epoch time.
+            preserve: boolean, if set will add to existing ts counts rather than
+                over-writing them. Useful when archiving counts that already
+                have entries in the ts set (e.g. backfilling)
         """
-        ts_key = 'ts_%s' % (cat_id,)
-        counter_key = 'counter_%s' % (cat_id,)
-        counts = conn.hgetall(counter_key)
+        ts_key = 'ts_%s' % (self.cat_id,)
+        counter_key = 'counter_%s' % (self.cat_id,)
+        check_mark = calendar.timegm(start_time.timetuple())
         counters_to_delete = []
-        for ts in counts:
-            if int(ts) < calendar.timegm(start_time.timetuple()):
-                conn.zadd(ts_key, cls.generate_ts_value(ts, counts[ts]), ts)
-                counters_to_delete.append(ts)
+        interesting_ts = [
+            int(x)
+            for x in self.redis_conn.hgetall(counter_key)
+            if x < check_mark
+        ]
+
+        for ts in interesting_ts:
+            new_value = counts[ts]
+            if preserve:
+                existing_entry = self.range(ts, ts)
+                if existing_entry:
+                    new_value += existing_entry[0].count
+            self.redis_conn.zadd(
+                ts_key, cls.generate_ts_value(ts, new_value), ts
+            )
+            counters_to_delete.append(ts)
 
         # Remove the counters from the 'counter' key.
         # We store longterm counters in the timeseries key (ts).
@@ -139,10 +152,8 @@ class Events(object):
         if ts_increment:
             self.redis_conn.hincrby("counter_" + self.cat_id, timestamp, 1)
 
-    def last_x(self, count):
-        self.redis_conn.zrevrange(
-            "data_%s" % self.cat_id, 0, count
-        )
+    def range(self, start, end):
+        return self.redis_conn.zrange("data_%s" % (self.cat_id,), start, end)
 
     def _backfill_timeseries(self, delete=False):
         """This is for pulling data out an event stream and putting in ts.
@@ -176,7 +187,7 @@ class Category(object):
     HUMAN_NAME_KEY = "human_name"
     THRESHOLD_KEY = "threshold"
 
-    def __init__(self, redis_conn, signature=None, cat_id=None):
+    def __init__(self, redis_conn, signature=None, cat_id=None, event=None):
         self.conn = redis_conn
 
         if signature:
@@ -186,9 +197,14 @@ class Category(object):
         else:
             self.cat_id = None
 
+        self.timeseries, self.events = None, None
+
         if self.cat_id:
             self.timeseries = TimeSeries(redis_conn, self.cat_id)
             self.events = Events(redis_conn, self.cat_id)
+
+        if event and self.events:
+            self.events.add_event(event)
 
     def to_dict(self):
         return {
@@ -197,8 +213,52 @@ class Category(object):
             self.THRESHOLD_KEY: self.threshold,
         }
 
+    def recategorise(self, default_threshold, archive_time):
+        """WARNING: Will remove this category and re-sort it's events"""
+        cat_id = self.cat_id
+        self.conn.hdel(self.CAT_META_HASH, self.SIGNATURE_KEY)
+        self.conn.hdel(self.CAT_META_HASH, self.HUMAN_NAME_KEY)
+        self.conn.hdel(self.CAT_META_HASH, self.THRESHOLD_KEY)
+        comp = classifier.Levenshtein()
+
+        event_chunk = 1000
+        curr_count = 0
+        while 1:
+            events = self.events.range(curr_count, (curr_count+event_chunk-1))
+            if not events:
+                break
+            for event in events:
+                event_dict = json.loads(event)
+                self.classify(self.conn, comp, event_dict, default_threshold)
+            curr_count += event_chunk
+        for cat in cls.get_all_categories(self.conn):
+            cat.timeseries.archive_cat_counts(archive_time)
+
     @classmethod
-    def create(cls, redis_conn, signature):
+    def classify(cls, queue, classifier, error, threshold):
+        """Determine which category, if any, a signature belongs to.
+
+        If it doesn't find a match, then it'll save the error into a new
+        category, which subsequent errors are checked against.
+
+        Args:
+            error: dict of json payload with a 'sig' key.
+            thresh: float, classification threshold to match.
+        """
+        categories = cls.get_all_categories(queue)
+        matched_cat = None
+        for cat in categories:
+            if classifier.check_message(cat, error, threshold):
+                cat.events.add_event(error)
+                matched_cat = cat
+                break
+        else:
+            cat_sig = error['sig']
+            matched_cat = cls.create(queue, cat_sig, event=error)
+        return matched_cat
+
+    @classmethod
+    def create(cls, redis_conn, signature, event=None):
         """Adds category metadata.
 
         This method will set 3 metadata fields for the category hash:
@@ -219,7 +279,10 @@ class Category(object):
         for key, value in cat_fields:
             redis_conn.hset(cls.CAT_META_HASH, "%s:%s" %(cat_id, key), value)
 
-        return cls(redis_conn, cat_id=cat_id)
+        kwargs = {"cat_id": cat_id}
+        if event:
+            kwargs["event"] = event
+        return cls(redis_conn, **kwargs)
 
     @classmethod
     def get_all_categories(cls, redis_conn):

@@ -16,7 +16,7 @@ from firetower import  redis_util
 REDIS_HOST = "localhost"
 REDIS_PORT = 6379
 REDIS_DB = 1
-REDIS = redis_util.Redis(REDIS_HOST, REDIS_PORT, REDIS_DB)
+REDIS = redis_util.get_redis_conn(REDIS_HOST, REDIS_PORT, REDIS_DB)
 
 DEFAULT_TIME_SLICE = 300000
 
@@ -54,17 +54,14 @@ def cat_chart(cat_id=None):
 
 @app.route("/api/categories/")
 def cat_route():
-    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT, REDIS_DB).conn
-
     ret = {}
-    for cat in category.Category.get_all_categories(redis):
+    for cat in category.Category.get_all_categories(REDIS):
         ret[cat.cat_id] = cat.to_dict()
 
     return flask.jsonify(ret)
 
 
 def base_timeseries(cat_id=None):
-    redis = redis_util.Redis(REDIS_HOST, REDIS_PORT, REDIS_DB).conn
     get_all = request.args.get("all")
     start = request.args.get("start")
     end = request.args.get("end")
@@ -74,7 +71,7 @@ def base_timeseries(cat_id=None):
             return category.Category(redis, cat_id=cat_id).timeseries.all()
         else:
             time_series = {}
-            for cat in category.Category.get_all_categories(redis):
+            for cat in category.Category.get_all_categories(REDIS):
                 time_series[cat.cat_id] = cat.timeseries.all()
             return time_series
     else:
@@ -94,7 +91,7 @@ def base_timeseries(cat_id=None):
             ]
         else:
             time_series = {}
-            for cat in category.Category.get_all_categories(redis):
+            for cat in category.Category.get_all_categories(REDIS):
                 time_series[cat.cat_id] = [
                 (x.timestamp*1000, x.count) for x in
                 cat.timeseries.range(start, end)

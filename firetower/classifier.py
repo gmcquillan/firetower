@@ -3,8 +3,6 @@ import json
 
 from logbook import Logger
 
-import category
-
 log = Logger('Firetower-classifier')
 
 def longest_common_substr(s1, s2):
@@ -71,7 +69,7 @@ class Levenshtein(Classifier):
         log.debug('Checking message using %s threshold value' % (str(thresh),))
 
         exemplar_str = None
-        last_data = cat.events.last_x(1)
+        last_data = cat.events.range(-1, -1)
         if not last_data:
             exemplar_str = cat.signature
         else:

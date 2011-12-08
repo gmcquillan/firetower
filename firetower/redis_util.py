@@ -108,17 +108,18 @@ class MockRedis(object):
         return ret
 
 
-class Redis(redis.Redis):
+class _Redis(redis.Redis):
     pass
 
 def get_redis_conn(host, port, redis_db=1):
     try:
-        conn = Redis(
+        conn = _Redis(
             host=host, port=port, db=redis_db)
         conn.ping()
     except ConnectionError:
         conn = MockRedis()
     return conn
+
 #
 #
 #class Redis(object):
