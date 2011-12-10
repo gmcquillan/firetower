@@ -23,6 +23,9 @@ class TimeSeries(object):
     def convert_ts_list(self, ts_list):
         """Process lists from timeseries sorted sets.
 
+        Args:
+            ts_list: List of tuples from the ts_ sorted set.
+
         Takes a list of scores and values from a time series sorted set and
         return a list of entries in the form ({TIMESTAMP}, {COUNT}). This is
         required because the TS sorted set doesn't hold the raw count, to make
@@ -32,6 +35,7 @@ class TimeSeries(object):
         ret = []
 
         slice_dict = {}
+        # This is seconds
         time_slice = 1
 
         if not ts_list:
@@ -112,6 +116,9 @@ class TimeSeries(object):
             if preserve:
                 existing_entry = self.range(ts, ts)
                 if existing_entry:
+                    # If there is an existing entry then don't overwrite it.
+                    # If we do find something it should be the only entry for
+                    # that second timeslot.
                     new_value += existing_entry[0].count
             self.redis_conn.zadd(
                 ts_key, self.generate_ts_value(ts, new_value), ts
@@ -130,6 +137,15 @@ class Events(object):
         self.redis_conn = redis_conn
 
     def add_event(self, event, timestamp=None, ts_increment=True):
+        """Add an event to the event list.
+
+        Args:
+            event: the event dictionary to save into the event set
+            timestamp: Optional time stamp to use when inserting the event.
+                Defaults to now.
+            ts_increment: Optional. Increments the counter for this category.
+
+        """
         if timestamp is None:
             timestamp = int(time.time())
 
@@ -139,6 +155,14 @@ class Events(object):
             self.redis_conn.hincrby("counter_" + self.cat_id, timestamp, 1)
 
     def range(self, start, end):
+        """Return a range of events
+
+        Args:
+            start: Start index to return from.
+            end: End index to return to.
+
+        Both start and end are inclusive.
+        """
         return self.redis_conn.zrange("data_%s" % (self.cat_id,), start, end)
 
     def _backfill_timeseries(self, delete=False):
@@ -197,6 +221,7 @@ class Category(object):
             self.events.add_event(event)
 
     def to_dict(self):
+        """Return a dictionary representation of this cats metadata"""
         return {
             self.SIGNATURE_KEY: self.signature,
             self.HUMAN_NAME_KEY: self.human_name,
@@ -204,7 +229,17 @@ class Category(object):
         }
 
     def recategorise(self, default_threshold, archive_time=None):
-        """WARNING: Will remove this category and re-sort it's events"""
+        """WARNING: Will remove this category and re-sort its events
+
+        Args:
+            default_threshold: Default threshold to try and reclassify on.
+                This takes the place of what is pulled from the config in
+                firetower-server.
+            archive_time: Optional. After reclassification if this is set
+                everything before this time will be archived from this point
+                back.
+
+        """
         del_keys = (
             "%s:%s" %(self.cat_id, self.SIGNATURE_KEY),
             "%s:%s" %(self.cat_id, self.HUMAN_NAME_KEY),
@@ -260,6 +295,11 @@ class Category(object):
     @classmethod
     def create(cls, redis_conn, signature, event=None):
         """Adds category metadata.
+
+        Args:
+            redis_conn: Redis connection to use.
+            signature: Signature of the new category.
+            event: Optional. Event to save under the new category.
 
         This method will set 3 metadata fields for the category hash:
         * category is the full text of the original cateory.
