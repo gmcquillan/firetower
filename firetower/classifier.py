@@ -41,15 +41,6 @@ class NaiveBayes(Classifier):
 
 
 class Levenshtein(Classifier):
-
-    def __init__(self, redis):
-        """init.
-
-        Args:
-            conf: a conf.Conf obj.
-        """
-        self.redis = redis
-
     def str_ratio(self, golden, test_str):
         """Return the ratio of similarity between two strings; ignore spaces."""
         return difflib.SequenceMatcher(None, golden, test_str).real_quick_ratio()
@@ -63,67 +54,27 @@ class Levenshtein(Classifier):
 
         return False
 
-    def write_errors(self, cat_id, error):
-        """Increment counters, save data.
-
-        Args:
-            cat_id: str, category id hash.
-            error: dict, new payload to save.
-        """
-        cat_counter = 'counter_%s' % (cat_id,)
-        cat_data = 'data_%s' % (cat_id,)
-        self.redis.incr_counter(cat_counter)
-        self.redis.save_error(cat_data, error)
-
     def check_message(self, cat, error, default_thresh):
         """Compare error with messages from a category.
 
         Args:
-            cat: tuplel, containing an id and a category name.
-                 Example: (0, 'Test Error')
+            cat: category object to compare the error against
             error: dict, error message we're processing.
             thresh: float, the ratio of similarity needed to match.
         """
         sig = error['sig']
 
-        cat_errors = self.redis.get_latest_data(cat)
-        cat_id = self.redis.construct_cat_id(cat)
-
-        custom_thresh = self.redis.get_threshold_from_id(cat_id)
+        custom_thresh = cat.threshold
         thresh = custom_thresh if custom_thresh is not None else default_thresh
-        log.debug('Checking message using %s threshold value' % (str(thresh),))
+        #log.debug('Checking message using %s threshold value' % (str(thresh),))
 
-        if not cat_errors:
-            return None
-        for cat_error in cat_errors:
-            if not cat_error:
-                continue
-            decode_error = json.loads(cat_error)
-            cat_sig = decode_error['sig']
-            if self.is_similar(cat_sig, sig, thresh):
-                cat_id = self.redis.construct_cat_id(cat)
-                log.debug('Found match for category id: %s' % (cat_id,))
-                self.write_errors(cat_id, error)
-                return True
-
-    def classify(self, error, thresh):
-        """Determine which category, if any, a signature belongs to.
-
-        If it doesn't find a match, then it'll save the error into a new
-        category, which subsequent errors are checked against.
-
-        Args:
-            error: dict of json payload with a 'sig' key.
-            thresh: float, classification threshold to match.
-        """
-        categories = (cat for cat in self.redis.get_categories())
-        # Let's see if our message matches a category
-        for cat in categories:
-            if self.check_message(cat, error, thresh):
-                break
+        exemplar_str = None
+        last_data = cat.events.range(-1, -1)
+        if not last_data:
+            exemplar_str = cat.signature
         else:
-            cat_sig = error['sig']
-            cat_id = self.redis.construct_cat_id(cat_sig)
-            log.info('Adding new category with id: %s' % (cat_id,))
-            self.redis.add_category(cat_sig)
-            self.write_errors(cat_id, error)
+            exemplar_str = json.loads(last_data[0])['sig']
+
+        if self.is_similar(sig, exemplar_str, thresh):
+            #log.debug('Found match for category id: %s' % (sig,))
+            return True

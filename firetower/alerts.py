@@ -1,5 +1,4 @@
 import datetime
-from redis_util import Redis
 
 
 class Alert(object):

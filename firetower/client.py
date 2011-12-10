@@ -3,8 +3,8 @@ import simplejson as json
 from logbook import Logger
 from logbook import TimedRotatingFileHandler
 
-from firetower import config
-from firetower import redis_util
+import config
+import redis_util
 
 handler = TimedRotatingFileHandler('firetower-client.log',
         date_format='%Y-%m-%d')
@@ -20,10 +20,13 @@ class Client(object):
         self.redis_port = self.conf.redis_port
         self.redis_db = self.conf.redis_db
         self.queue_key = self.conf.queue_key
-        self.queue = redis_util.Redis(
+        self.queue = redis_util.get_redis_conn(
                 host=self.redis_host,
                 port=self.redis_port,
                 redis_db=self.redis_db)
+
+    def push_event(self, event):
+        self.queue.lpush(self.queue_key, event)
 
     def emit(self, event):
         """Emit a message to firetower.
@@ -42,5 +45,5 @@ class Client(object):
             payload = {"sig": event}
             event = json.dumps(payload)
 
-        self.queue.push(self.queue_key, event)
+        self.push_event(event)
         log.debug("Pushed event %s to firetower" % (event,))
