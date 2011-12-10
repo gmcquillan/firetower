@@ -2,7 +2,6 @@ import calendar
 from collections import namedtuple
 import hashlib
 import simplejson as json
-import re
 import time
 
 import classifier
@@ -33,7 +32,7 @@ class TimeSeries(object):
         ret = []
 
         slice_dict = {}
-        time_slice = 1#5*60
+        time_slice = 1
 
         if not ts_list:
             return []
@@ -54,19 +53,6 @@ class TimeSeries(object):
 
         for key in keys:
             ret.append(TSTuple(key*time_slice, slice_dict[key]))
-        return ret
-
-
-
-        for ts_entry in ts_list:
-            print "ts_entry", ts_entry
-            ts = int(ts_entry[1])
-            ret.append(
-                TSTuple(
-                    ts,
-                    int(ts_entry[0].split(":")[1])
-                )
-            )
         return ret
 
     def all(self):
@@ -102,7 +88,7 @@ class TimeSeries(object):
         """Turn a timestamp and cat count into a value for storage in a set"""
         return "%s:%s" % (ts, count)
 
-    def archive_cat_counts(self, start_time, preserve=False):
+    def archive_cat_counts(self, start_time, preserve=True):
         """Move everything before start_time into a Sorted Set.
 
         Args:
@@ -115,27 +101,27 @@ class TimeSeries(object):
         counter_key = 'counter_%s' % (self.cat_id,)
         check_mark = calendar.timegm(start_time.timetuple())
         counters_to_delete = []
+        count_dict = self.redis_conn.hgetall(counter_key)
+
         interesting_ts = [
-            int(x)
-            for x in self.redis_conn.hgetall(counter_key)
-            if x < check_mark
+            x for x in count_dict if int(x) < check_mark
         ]
 
         for ts in interesting_ts:
-            new_value = counts[ts]
+            new_value = count_dict[ts]
             if preserve:
                 existing_entry = self.range(ts, ts)
                 if existing_entry:
                     new_value += existing_entry[0].count
             self.redis_conn.zadd(
-                ts_key, cls.generate_ts_value(ts, new_value), ts
+                ts_key, self.generate_ts_value(ts, new_value), ts
             )
             counters_to_delete.append(ts)
 
         # Remove the counters from the 'counter' key.
         # We store longterm counters in the timeseries key (ts).
         for counter in counters_to_delete:
-            conn.hdel(counter_key, counter)
+            self.redis_conn.hdel(counter_key, counter)
 
 
 class Events(object):
@@ -165,13 +151,17 @@ class Events(object):
         # to work properly, which may be why we're backfilling in the
         # first place.
         events = self.redis_conn.zrange(
-                "data_" % self.cat_id, 0, -1, withscores=True)
+                "data_%s" % self.cat_id, 0, -1, withscores=True)
         cat_counter_id = "counter_%s" % (self.cat_id,)
         cat_ts_id = "ts_%s" % (self.cat_id,)
         if delete:
             self.redis_conn.delete(cat_ts_id)
         for _sig, ts in events:
             self.redis_conn.hincrby(cat_counter_id, int(ts), 1)
+
+    def delete(self):
+        """Delete an entire set of data"""
+        self.redis_conn.delete("data_%s" % self.cat_id)
 
 
 class Category(object):
@@ -213,12 +203,17 @@ class Category(object):
             self.THRESHOLD_KEY: self.threshold,
         }
 
-    def recategorise(self, default_threshold, archive_time):
+    def recategorise(self, default_threshold, archive_time=None):
         """WARNING: Will remove this category and re-sort it's events"""
-        cat_id = self.cat_id
-        self.conn.hdel(self.CAT_META_HASH, self.SIGNATURE_KEY)
-        self.conn.hdel(self.CAT_META_HASH, self.HUMAN_NAME_KEY)
-        self.conn.hdel(self.CAT_META_HASH, self.THRESHOLD_KEY)
+        del_keys = (
+            "%s:%s" %(self.cat_id, self.SIGNATURE_KEY),
+            "%s:%s" %(self.cat_id, self.HUMAN_NAME_KEY),
+            "%s:%s" %(self.cat_id, self.THRESHOLD_KEY),
+        )
+
+        for key in del_keys:
+            self.conn.hdel(self.CAT_META_HASH, key)
+
         comp = classifier.Levenshtein()
 
         event_chunk = 1000
@@ -231,8 +226,13 @@ class Category(object):
                 event_dict = json.loads(event)
                 self.classify(self.conn, comp, event_dict, default_threshold)
             curr_count += event_chunk
-        for cat in cls.get_all_categories(self.conn):
-            cat.timeseries.archive_cat_counts(archive_time)
+        if archive_time:
+            for cat in self.get_all_categories(self.conn):
+                cat.timeseries.archive_cat_counts(archive_time)
+
+        self.events.delete()
+        self.conn.delete("counter_%s" %self.cat_id)
+        self.conn.delete("ts_%s" %self.cat_id)
 
     @classmethod
     def classify(cls, queue, classifier, error, threshold):

@@ -17,8 +17,8 @@ class Main(object):
 
     def __init__(self, conf):
         self.conf = conf
-        handler = TimedRotatingFileHandler(conf.log_file,
-                date_format='%Y-%m-%d')
+        handler = TimedRotatingFileHandler(
+            conf.log_file, date_format='%Y-%m-%d')
         handler.push_application()
         self.logger = Logger('Firetower-server')
         self.queue = redis_util.get_redis_conn(

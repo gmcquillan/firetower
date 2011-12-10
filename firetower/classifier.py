@@ -66,7 +66,7 @@ class Levenshtein(Classifier):
 
         custom_thresh = cat.threshold
         thresh = custom_thresh if custom_thresh is not None else default_thresh
-        log.debug('Checking message using %s threshold value' % (str(thresh),))
+        #log.debug('Checking message using %s threshold value' % (str(thresh),))
 
         exemplar_str = None
         last_data = cat.events.range(-1, -1)
@@ -76,5 +76,5 @@ class Levenshtein(Classifier):
             exemplar_str = json.loads(last_data[0])['sig']
 
         if self.is_similar(sig, exemplar_str, thresh):
-            log.debug('Found match for category id: %s' % (sig,))
+            #log.debug('Found match for category id: %s' % (sig,))
             return True
