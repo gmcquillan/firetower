@@ -25,7 +25,11 @@ app = Flask(__name__)
 @app.route("/")
 @app.route("/aggregate")
 def aggregate():
-    return render_template("aggregate.html")
+    slice = request.args.get("time_slice", None)
+    kwargs = {}
+    if slice:
+        kwargs["time_slice"] = slice
+    return render_template("aggregate.html", **kwargs)
 
 
 @app.route("/api/category/new", methods=["POST"])
@@ -67,13 +71,17 @@ def base_timeseries(cat_id=None):
     start = request.args.get("start")
     end = request.args.get("end")
 
+    slice = request.args.get("time_slice", None)
+    print slice
+
     if get_all:
         if cat_id:
-            return category.Category(redis, cat_id=cat_id).timeseries.all()
+            return category.Category(
+                redis, cat_id=cat_id).timeseries.all(time_slice=slice)
         else:
             time_series = {}
             for cat in category.Category.get_all_categories(REDIS):
-                time_series[cat.cat_id] = cat.timeseries.all()
+                time_series[cat.cat_id] = cat.timeseries.all(time_slice=slice)
             return time_series
     else:
         if start and end:
@@ -87,7 +95,7 @@ def base_timeseries(cat_id=None):
             return [
                 (x.timestamp*1000, x.count) for x in
                 category.Category(redis, cat_id=cat_id).timeseries.range(
-                    start, end
+                    start, end, time_slice=slice
                 )
             ]
         else:
@@ -95,7 +103,7 @@ def base_timeseries(cat_id=None):
             for cat in category.Category.get_all_categories(REDIS):
                 time_series[cat.cat_id] = [
                 (x.timestamp*1000, x.count) for x in
-                cat.timeseries.range(start, end)
+                cat.timeseries.range(start, end, time_slice=slice)
             ]
             return time_series
 

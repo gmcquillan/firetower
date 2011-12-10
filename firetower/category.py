@@ -9,6 +9,21 @@ import redis_util
 
 TSTuple = namedtuple("TimeSeriesTuple", ("timestamp", "count"))
 
+SECOND = 1
+MINUTE = 60
+HOUR = MINUTE * 60
+DAY = HOUR * 24
+WEEK = DAY * 7
+
+TIME_SLICES = {
+    "second": SECOND, "minute": MINUTE, "5_minute": MINUTE * 5,
+    "10_minute": MINUTE * 10, "15_minute": MINUTE * 15,
+    "30_minute": MINUTE * 30, "hour": HOUR, "3_hour": HOUR * 3,
+    "6_hour": HOUR * 6, "12_hour": HOUR * 12, "day": DAY,
+    "week": WEEK
+}
+
+
 class TimeSeries(object):
     def __init__(self, redis_conn, cat_id):
         """Create a time series instance for a category
@@ -20,11 +35,15 @@ class TimeSeries(object):
         self.cat_id = cat_id
         self.redis_conn = redis_conn
 
-    def convert_ts_list(self, ts_list):
+    def convert_ts_list(self, ts_list, time_slice=None):
         """Process lists from timeseries sorted sets.
 
         Args:
             ts_list: List of tuples from the ts_ sorted set.
+            time_slice: Optional. Name of a key in TIME_SLICES. The value of
+                that key sets the size of the bucket the time series data
+                is sorted into. Defaults to minute buckets.
+
 
         Takes a list of scores and values from a time series sorted set and
         return a list of entries in the form ({TIMESTAMP}, {COUNT}). This is
@@ -34,9 +53,14 @@ class TimeSeries(object):
         """
         ret = []
 
+        print time_slice
         slice_dict = {}
-        # This is seconds
-        time_slice = 1
+        # This will be an int of seconds pulled from TIME_SLICES. This is how
+        # large the buckets will be when sorting the time series data.
+        if time_slice is None:
+            time_slice = "minute"
+        time_slice = TIME_SLICES[time_slice]
+        print time_slice
 
         if not ts_list:
             return []
@@ -59,7 +83,8 @@ class TimeSeries(object):
             ret.append(TSTuple(key*time_slice, slice_dict[key]))
         return ret
 
-    def all(self):
+    def all(self, time_slice=None):
+        print "all", time_slice
         """Return all timeseries data for the category.
 
         The data will be returned as a sequence of sequences.
@@ -67,11 +92,13 @@ class TimeSeries(object):
         a number of seconds since epoch and VALUE is the number of times the
         category appeared in that second.
         """
-        return self.convert_ts_list(self.redis_conn.zrange(
-            "ts_%s" % (self.cat_id), 0, -1, withscores=True
-        ))
+        return self.convert_ts_list(
+            self.redis_conn.zrange(
+                "ts_%s" % (self.cat_id), 0, -1, withscores=True
+            ), time_slice
+        )
 
-    def range(self, start, end):
+    def range(self, start, end, time_slice=None):
         """Return all timeseries data for the category between start and end.
 
         start and end are assumed to be seconds since the epoch.
@@ -84,7 +111,8 @@ class TimeSeries(object):
         return self.convert_ts_list(
             self.redis_conn.zrevrangebyscore(
                 "ts_%s" % (self.cat_id), end, start, withscores=True
-            )
+            ),
+            time_slice
         )
 
     @staticmethod

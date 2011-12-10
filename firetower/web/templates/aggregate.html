@@ -73,7 +73,11 @@
             getAggregateData = function() {
                 $("#loadingMsg").show();
                 var handler = $.ajax({
+                    {% if time_slice %}
+                    url: "/api/categories/timeseries/?time_slice={{ time_slice }}",
+                    {% else %}
                     url: "/api/categories/timeseries",
+                    {% endif %}
                     success: function(returnedData, httpStatus, xhr){
                         timeseriesData = JSON.parse(returnedData);
                         for (cat in timeseriesData) {
