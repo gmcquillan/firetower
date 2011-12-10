@@ -22,6 +22,7 @@ DEFAULT_TIME_SLICE = 300000
 
 app = Flask(__name__)
 
+@app.route("/")
 @app.route("/aggregate")
 def aggregate():
     return render_template("aggregate.html")
