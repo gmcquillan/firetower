@@ -41,14 +41,34 @@ class NaiveBayes(Classifier):
 
 
 class Levenshtein(Classifier):
-    def str_ratio(self, golden, test_str):
-        """Return the ratio of similarity between two strings; ignore spaces."""
-        return difflib.SequenceMatcher(None, golden, test_str).real_quick_ratio()
+    def str_ratio(self, exemplar_str, sig_str,
+            small_sig_size=200, medium_sig_size=2000):
+        """Return the ratio of similarity between two strings; ignore spaces.
 
-    def is_similar(self, golden, test_str, thresh):
+        Args:
+            exemplar_str: str, basis of comparison within an existing category.
+            sig_str: str, signature string we're trying to compare.
+            small_sig_size: int, largest sig size before we use change
+                    comparison methodologies.
+            medium_sig_size: int, largeds sig size before we downgrade
+                    comparison methods fully.
+        """
+        sig_len = len(sig_str)
+        seq = difflib.SequenceMatcher(None, exemplar_str, sig_str)
+        if sig_len < small_sig_size:
+            log.debug('Small signature found, using ratio()')
+            return seq.ratio()
+        elif sig_len < medium_sig_size and sig_len >= small_sig_size:
+            log.debug('Medium signature found, using quick_ratio()')
+            return seq.quick_ratio()
+        else:
+            log.debug('Large signature found, using real_quick_ratio()')
+            return seq.real_quick_ratio()
+
+    def is_similar(self, golden, sig_str, thresh):
         """Returns True if similarity is larger than thresh."""
 
-        ratio = self.str_ratio(golden, test_str)
+        ratio = self.str_ratio(golden, sig_str)
         if ratio > thresh:
             return True
 

@@ -27,7 +27,14 @@ class TestClient(client.Client):
     def run(self, num_events):
         for i in xrange(0, num_events):
             # Semi-randomly seed the 'sig' key in our fake errors
-            FAKE_DATA['sig'] = random.choice(FAKE_SIGS) + str(random.randint(100, 999))
+            do_multiply = random.randint(0, 9) # how often to multple 1/10 now.
+            sig_multiple = random.randint(2, 100000) # how much to multiple by.
+            fake_sig = random.choice(FAKE_SIGS) + str(random.randint(100, 999))
+            if do_multiply == 0:
+                FAKE_DATA['sig'] = fake_sig * sig_multiple
+            else:
+                FAKE_DATA['sig'] = fake_sig
+
             encoded = json.dumps(FAKE_DATA)
             self.emit(encoded)
             if not i % 100:
