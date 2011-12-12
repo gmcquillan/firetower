@@ -12,6 +12,8 @@
         </div>
 
         <script type="text/javascript">
+            var catData = new Array();
+
             var timeseriesData = new Array();
             // Hashmap holding the currently graphed timeseries
             var graphedData = new Array();
@@ -24,6 +26,16 @@
             var killSeries = function(){
                 toggleSeries($(this), false);
                 return false;
+            }
+
+            var getCategoryMetadata = function(){
+                $.ajax({
+                    url: "/api/categories/",
+                    async: false,
+                    success: function(jsonData, httpStatus, xhr){
+                        catData = JSON.parse(jsonData);
+                    }
+                });
             }
 
             var toggleSeries = function(link, add){
@@ -51,8 +63,14 @@
             }
 
             var buildLabel = function(label, series) {
-                var killSeries = "<a id='" + label + "_link' class='killSeries' href='#'>-</a>"
-                return label + "&nbsp;" + killSeries;
+                var link = "";
+                if (graphedData[label].length > 0){
+                    link = "<a id='" + label + "_link' class='killSeries' href='#'>-</a>"
+                }
+                else {
+                    link = "<a id='" + label + "_link' class='addSeries' href='#'>+</a>"
+                }
+                return label + "&nbsp;" + link;
             }
 
             var loadGraphData = function(){
@@ -68,10 +86,9 @@
                 drawAggChart(chartData);
             }
 
-            $(function () {
-
-            getAggregateData = function() {
+            var getAggregateData = function() {
                 $("#loadingMsg").show();
+                getCategoryMetadata();
                 var handler = $.ajax({
                     {% if time_slice %}
                     url: "/api/categories/timeseries/?time_slice={{ time_slice }}",
@@ -80,8 +97,11 @@
                     {% endif %}
                     success: function(returnedData, httpStatus, xhr){
                         timeseriesData = JSON.parse(returnedData);
+
                         for (cat in timeseriesData) {
-                            graphedData[cat] = timeseriesData[cat];
+                            if (!(cat in graphedData) || graphedData[cat].length > 0){
+                                graphedData[cat] = timeseriesData[cat];
+                            }
 
                             // Sum total instances per category
                             var catTotal = 0;
@@ -99,7 +119,7 @@
                 });
             }
 
-            drawAggChart = function(chartData) {
+            var drawAggChart = function(chartData) {
                 $("#loadingMsg").hide();
                 $.plot(
                     $("#aggregatePlaceholder"),
@@ -121,30 +141,22 @@
                 );
             }
 
-            getCategoryName = function(catId, catTotal) {
-                var handler = $.ajax({
-                    url: "/api/categories/",
-                    success: function(jsonData, httpStatus, xhr){
-                        var catData = JSON.parse(jsonData);
-                        var catName = catData[catId].human_name;
-                        writeAggKey(catId, catName, catTotal);
-                    }
-                });
+            var getCategoryName = function(catId, catTotal) {
+                var catName = catData[catId].human_name;
+                writeAggKey(catId, catName, catTotal);
             }
 
             // Write key for aggregate chart
-            writeAggKey = function(catId, catName, catTotal) {
+            var writeAggKey = function(catId, catName, catTotal) {
 
                 // Add category name & totals to key
-                $("#key").append(
-                    '<div class="keyEntry" id="'+catId+'"></div>')
+                if ($("#"+catId).length === 0){
+                    $("#key").append(
+                        '<div class="keyEntry" id="'+catId+'"></div>')
+                }
 
-                $("#"+catId).append('<div class="catTotal"><h1>'+catTotal+'</h1></div><div class="catName"><a href="/category/'+catId+'">'+catName+'</a></div>')
+                $("#"+catId).html('<div class="catTotal"><h1>'+catTotal+'</h1></div><div class="catName"><a href="/category/'+catId+'">'+catName+'</a></div>')
             }
-
-            // Get default timeseries data for all categories
-            // & draw chart
-            getAggregateData();
 
             function showTooltip(x, y, contents) {
                 $('<div id="tooltip">' + contents + '</div>').css( {
@@ -202,7 +214,10 @@
                     previousPoint = null;
                 }
             });
-
+            $(function () {
+                // Get default timeseries data for all categories
+                // & draw chart
+                getAggregateData();
             });
         </script>
         {% endblock %}
