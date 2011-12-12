@@ -53,14 +53,12 @@ class TimeSeries(object):
         """
         ret = []
 
-        print time_slice
         slice_dict = {}
         # This will be an int of seconds pulled from TIME_SLICES. This is how
         # large the buckets will be when sorting the time series data.
         if time_slice is None:
             time_slice = "minute"
         time_slice = TIME_SLICES[time_slice]
-        print time_slice
 
         if not ts_list:
             return []
@@ -84,7 +82,6 @@ class TimeSeries(object):
         return ret
 
     def all(self, time_slice=None):
-        print "all", time_slice
         """Return all timeseries data for the category.
 
         The data will be returned as a sequence of sequences.
