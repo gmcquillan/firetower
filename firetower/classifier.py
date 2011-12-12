@@ -41,8 +41,33 @@ class NaiveBayes(Classifier):
 
 
 class Levenshtein(Classifier):
+
+
+    def str_len_ratio(self, cat_str, sig_str, str_len_thresh=0.8):
+        """Comare lengths to see if we should go with more complex analysis.
+
+        Args:
+            cat_str: str, the category we're going to compare against.
+            sig_str: str, the string we're pulling from incoming event.
+            str_len_thresh: float, passing size ratio and above.
+        Returns:
+            bool if the lengths are within length tolerence.
+        """
+        cat_str_len = len(cat_str)
+        sig_str_len = len(sig_str)
+        ratio = 0.0
+        if cat_str_len < sig_str_len:
+            ratio = float(cat_str_len)/sig_str_len
+        else:
+            ratio = float(sig_str_len)/cat_str_len
+
+        if ratio > str_len_thresh:
+            return True
+        else:
+            return False
+
     def str_ratio(self, exemplar_str, sig_str,
-            small_sig_size=200, medium_sig_size=2000):
+            small_sig_size=50, medium_sig_size=2000):
         """Return the ratio of similarity between two strings; ignore spaces.
 
         Args:
@@ -52,18 +77,24 @@ class Levenshtein(Classifier):
                     comparison methodologies.
             medium_sig_size: int, largeds sig size before we downgrade
                     comparison methods fully.
+        Returns:
+            float, ratio of similarity.
         """
-        sig_len = len(sig_str)
-        seq = difflib.SequenceMatcher(None, exemplar_str, sig_str)
-        if sig_len < small_sig_size:
-            log.debug('Small signature found, using ratio()')
-            return seq.ratio()
-        elif sig_len < medium_sig_size and sig_len >= small_sig_size:
-            log.debug('Medium signature found, using quick_ratio()')
-            return seq.quick_ratio()
+        if self.str_len_ratio(exemplar_str, sig_str):
+            sig_len = len(sig_str)
+            seq = difflib.SequenceMatcher(None, exemplar_str, sig_str)
+            if sig_len < small_sig_size:
+                log.debug('Small signature found, using ratio()')
+                return seq.ratio()
+            elif sig_len < medium_sig_size and sig_len >= small_sig_size:
+                log.debug('Medium signature found, using quick_ratio()')
+                return seq.quick_ratio()
+            else:
+                log.debug('Large signature found, using real_quick_ratio()')
+                return seq.real_quick_ratio()
         else:
-            log.debug('Large signature found, using real_quick_ratio()')
-            return seq.real_quick_ratio()
+            log.debug('Ratio was too far off')
+            return 0.0
 
     def is_similar(self, golden, sig_str, thresh):
         """Returns True if similarity is larger than thresh."""
