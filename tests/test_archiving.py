@@ -1,4 +1,4 @@
-from unittest import TestCase
+import unittest
 
 from firetower import redis_util
 from firetower.category import TimeSeries
@@ -6,7 +6,7 @@ from firetower.category import TimeSeries
 def ts_to_hits(ts):
     return int(ts[1].split(":")[1])
 
-class TestArchive(TestCase):
+class TestArchive(unittest.TestCase):
     def setUp(self):
         self.r = redis_util.MockRedis(share_state=False)
         self.start_time = 1000
@@ -52,3 +52,6 @@ class TestArchive(TestCase):
         self.assertEqual(len(ts), 2)
         for record in ts:
             self.assertEqual(ts_to_hits(record), 1)
+
+if __name__ == '__main__':
+    unittest.main()

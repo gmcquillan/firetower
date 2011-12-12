@@ -86,7 +86,6 @@ class Levenshtein(Classifier):
 
         custom_thresh = cat.threshold
         thresh = custom_thresh if custom_thresh is not None else default_thresh
-        #log.debug('Checking message using %s threshold value' % (str(thresh),))
 
         exemplar_str = None
         last_data = cat.events.range(-1, -1)

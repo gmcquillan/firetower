@@ -1,10 +1,26 @@
 import json
-from unittest import TestCase
+import unittest
 
+import test_category
 from firetower import classifier
-from firetower.redis_util import Redis
+from firetower import redis_util
 
-class TestClassfier(TestCase):
+
+class TestClassfier(unittest.TestCase):
+
+    def setUp(self):
+        self.r = redis_util.MockRedis(share_state=False)
+
+        self.cat_id = "baz"
+        self.cat_sig = "wombat"
+        self.cat_thresh = 0.7
+        self.cat_name = "Classifier test category"
+
+        self.cat = test_category.create_mock_category(
+                self.cat_id,
+                self.cat_sig,
+                self.cat_thresh,
+                self.cat_name)
 
     def test_lcs(self):
         """Test the longest common substring function."""
@@ -25,9 +41,7 @@ class TestClassfier(TestCase):
 class TestLevenshtein(TestCase):
 
     def setUp(self):
-        #self.r = Redis('localhost', 6379)
-        self.r = Redis('localhost', 63790) # non-redis port so we get mock redis
-        self.lev = classifier.Levenshtein(self.r)
+        self.lev = classifier.Levenshtein()
 
     def test_str_ratio(self):
         """Test Levenshtein.str_ratio function."""
@@ -40,59 +54,23 @@ class TestLevenshtein(TestCase):
 
     def test_is_similar(self):
         """Test Levenshtein.is_similar function."""
-        know_str = "wombat"
+        exemplar_str = "wombat"
         test_str = "combat"
-        assert self.lev.is_similar(know_str, test_str, 0.5)
+        assert self.lev.is_similar(exemplar_str, exemplar_str, 0.5)
 
-    def test_write_errors(self):
-        """Test Levenshtein.write_errors function."""
-
-        #test_error = {'sig': 'Testing Error', 'body': 'Error! Alert!'}
-        #test_cat = 'Testing Error'
-        #self.lev.write_errors(test_cat, test_error)
-
-        #test_cat_id = self.r.construct_cat_id(test_cat)
-
-        #count_res = self.r.conn.hgetall('counter_%s' % (test_cat_id,))
-        #assert count_res
-
-        #data_line = list(self.r.conn.zrange('data_%s' % (test_cat_id,), 0, -1))
-        #data_res = json.loads(
-        #        list(self.r.conn.zrange('data_%s' % (test_cat_id,), 0, -1))[0])
-
-        # TODO: rewrite this test
-        # This is erroring out because of some fundamental changes in accessing
-        # error data.
-
-        #assert str(data_res['sig']) == test_error['sig']
-        #assert str(data_res['body']) == test_error['body']
-
-    def test_classify(self):
+    def test_check_message(self):
         """Test the classify function."""
 
-        #test_error = {'sig': 'Testing Error', 'body': 'Error!!!!'}
-        #test_similar_error = {'sig': 'Testing Error 456', 'body': 'Error!!!!'}
-        #test_different_error = {
-        #        'sig': 'Something Totally Different', 'body': 'Error!!!'}
+        mock_id = "something"
+        mock_sig = "wombat"
+        mock_thresh = 0.7
+        mock_human = "A test category"
+        mock_cat = test_category.create_mock_category(
+                mock_id, mock_sig, mock_thresh, mock_human)
 
-        #fake_threshold = 0.5
+        test_error = {"sig": "combat"}
 
-        # Nothing exists, so put it in unknown errors
-        #self.lev.classify(test_error, fake_threshold)
+        assert self.lev.check_message(mock_cat, test_error, 0.7)
 
-        # Now both unknown errors are pulled out
-        #self.lev.classify(test_similar_error, fake_threshold)
-
-        # Now check that our categorized counts are accurate for
-        # 'Testing Error'
-        #testing_error_id = self.r.construct_cat_id('Testing_Error')
-        #counts = self.r.conn.hgetall('counter_%s' % testing_error_id)
-        #counts_values = [int(counts[item]) for item in counts]
-        #counts_sum = sum(counts_values)
-        #assert counts_sum == 2
-
-        #self.lev.classify(test_different_error, fake_threshold)
-        #sim_counts = self.r.conn.hgetall('counter_%s' % testing_error_id)
-        #sim_counts_values = [int(sim_counts[item]) for item in sim_counts]
-        #sim_counts_sum = sum(sim_counts_values)
-        #assert sim_counts_sum == 2
+if __name__ == '__main__':
+    unittest.main()

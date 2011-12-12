@@ -1,33 +1,43 @@
-from unittest import TestCase
+import unittest
 
 from firetower import redis_util
 from firetower.category import Category, TimeSeries
 
-class TestCategory(TestCase):
+
+def create_mock_category(id, sig, thresh, name):
+    """Create a mock category object for testing purposes.
+
+    Args:
+        id: str, system referenc (hash when not a test obj).
+        sig: str, the signature we're matching against.
+        thresh: float, what ratio will match sig.
+        name: str, human-readable name.
+    """
+    cat = Category(
+            redis_util.MockRedis(share_state=False),
+            cat_id=id)
+
+    cat._set_signature(sig)
+    cat._set_threshold(thresh)
+    cat._set_human(name)
+
+    return cat
+
+
+class TestCategory(unittest.TestCase):
     def setUp(self):
         self.r = redis_util.MockRedis(share_state=False)
 
-        self.cat_id = "foobar"
-        self.cat_sig = "baz"
-        self.cat_thresh = 1.0
-        self.cat_name = "ham_eggs_spam"
+        self.cat_id = "blah"
+        self.cat_sig = "database"
+        self.cat_thresh = 0.7
+        self.cat_name = "The ususal"
 
-        self.set_meta("signature", self.cat_sig)
-        self.set_meta("threshold", self.cat_thresh)
-        self.set_meta("human_name", self.cat_name)
-
-        self.cat = Category(self.r, cat_id=self.cat_id)
-
-    def get_meta(self, name):
-        self.r.hget(
-            Category.CAT_META_HASH, "%s:%s" % (self.cat_id, name)
-        )
-
-    def set_meta(self, name, value):
-        self.r.hset(
-            Category.CAT_META_HASH,
-            "%s:%s" % (self.cat_id, name), value
-        )
+        self.cat = create_mock_category(
+                self.cat_id,
+                self.cat_sig,
+                self.cat_thresh,
+                self.cat_name)
 
     def test_category_create(self):
         cat = Category.create(self.r, "new test category")
@@ -97,3 +107,6 @@ class TestTimeSeries(TestCase):
 
         ts_list = self.time_series.range(110, 115)
         self.assertEqual(len(ts_list), 6)
+
+if __name__ == '__main__':
+    unittest.main()
