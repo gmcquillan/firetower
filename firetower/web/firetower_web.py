@@ -128,4 +128,4 @@ def category_api(category_id):
 
 
 def main():
-    app.run(debug=True, use_evalex=False, host='127.0.0.1')
+    app.run(debug=True, use_evalex=False, host='0.0.0.0')
