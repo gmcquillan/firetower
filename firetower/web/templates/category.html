@@ -1,0 +1,171 @@
+        {% extends "base.html"  %}
+        {% block title %}
+            <h1> Firetower - Total Errors per Category </h1>
+        {% endblock %}
+        {% block content %}
+        <div id="aggregate">
+            <div id="categoryPlaceholder">
+                <div id="loadingMsg">Loading...</div>
+            </div>
+            <div id="legend"></div>
+            <div id="key"></div>
+            <div id="reload">
+            Auto reload: <input type="checkbox" id="reload_check" /><br />
+            <div id="set_reload">Reload every <input type="text" id="reload_input" value="60"/> seconds</div>
+            Last updated <span id="last_reload">-</span> seconds ago.<br />
+            <a href="/aggregate">Back to aggregate page</a>
+            </div>
+            {{ cat_id }}
+            <pre>{{ signature }}</pre>
+        </div>
+
+        <script type="text/javascript">
+            var cat_id = '{{ cat_id }}';
+            var human_name = '{{ human_name }}';
+            var timeSinceReload = 0;
+            var reloadEvery = 0;
+
+            var getAggregateData = function() {
+                $("#loadingMsg").show();
+                var handler = $.ajax({
+                    {% if time_slice %}
+                    url: "/api/categories/{{ cat_id }}/timeseries/?time_slice={{ time_slice }}",
+                    {% else %}
+                    url: "/api/categories/{{ cat_id }}/timeseries",
+                    {% endif %}
+                    success: function(returnedData, httpStatus, xhr){
+                        var timeSeriesData = JSON.parse(returnedData);
+                        var catTotal = 0;
+
+                        for (var i=0, arr; arr=timeSeriesData['{{ cat_id }}'][i]; i++) {
+                                catTotal += arr[1];
+                            }
+
+                        var chartData = new Array();
+                        chartData.push(
+                            {
+                                label: '{{ human_name }}',
+                                data: timeSeriesData['{{ cat_id }}']
+                            }
+                        )
+                        drawAggChart(chartData);
+                        writeAggKey('{{ cat_id }}', '{{ human_name }}', catTotal);
+                    }
+                });
+            }
+
+            var drawAggChart = function(chartData) {
+                $("#loadingMsg").hide();
+                $.plot(
+                    $("#categoryPlaceholder"),
+                    chartData,
+                    {
+                        series: {
+                            lines: { show: true },
+                            points: { show: true }
+                        },
+                        xaxis: { mode: "time" },
+                        yaxis: { min: 1 },
+                        grid: { hoverable: true, clickable: true },
+                        legend: {
+                            container: "#legend",
+                        }
+                    }
+                );
+            }
+
+            // Write key for aggregate chart
+            var writeAggKey = function(catId, catName, catTotal) {
+
+                // Add category name & totals to key
+                if ($("#"+catId).length === 0){
+                    $("#key").append(
+                        '<div class="keyEntry" id="'+catId+'"></div>')
+                }
+
+                $("#"+catId).html('<div class="catTotal"><h1>'+catTotal+'</h1></div><div class="catName"><a href="/category/'+catId+'">'+catName+'</a></div>')
+            }
+
+            function showTooltip(x, y, contents) {
+                $('<div id="tooltip">' + contents + '</div>').css( {
+                    position: 'absolute',
+                    display: 'none',
+                    top: y + 5,
+                    left: x + 5,
+                    border: '1px solid #fdd',
+                    padding: '2px',
+                    'background-color': '#fee',
+                    opacity: 0.80
+                }).appendTo("body").fadeIn(200);
+            }
+
+            var previousPoint = null;
+            $("#categoryPlaceholder").bind("plothover", function (event, pos, item) {
+                $("#x").text(pos.x.toFixed(2));
+                $("#y").text(pos.y.toFixed(2));
+
+                if (item) {
+                    if (previousPoint != item.dataIndex) {
+                        previousPoint = item.dataIndex;
+
+                        $("#tooltip").remove();
+                        var x = item.datapoint[0].toFixed(2),
+                            y = item.datapoint[1].toFixed(2);
+
+                        var catData = "";
+                        $.ajax({
+                            async: false,
+                            url: "/api/categories/",
+                            success: function(jsonData, httpStatus, xhr){
+                                catData = JSON.parse(jsonData);
+                            }
+                        });
+
+                        var date = new Date(Math.floor(x));
+                        var date_str = date.getFullYear() + "/" + date.getMonth() + "/" + date.getDay();
+                        var time_str = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+                        for(var cat in catData){
+                            if (item.series.label == cat){
+                                cat_name = catData[cat]["human_name"];
+                            }
+                        }
+                        var tooltip_msg = "At " + date_str + " " + time_str + " " + " category " + cat_name  + " got " + y + " hits"
+
+                        showTooltip(
+                            item.pageX, item.pageY,
+                            tooltip_msg
+                        );
+                    }
+                }
+                else {
+                    $("#tooltip").remove();
+                    previousPoint = null;
+                }
+            });
+            $(function () {
+                // Get default timeseries data for all categories
+                // & draw chart
+                getAggregateData();
+            });
+
+            setInterval(function() {
+                var reload_check = $("#reload_check");
+                if (reload_check.is(':checked')){
+                    var reload_input = $("#reload_input");
+                    reloadEvery = parseInt(reload_input.val())
+                    if (reloadEvery < timeSinceReload){
+                        timeSinceReload = 0;
+                        getAggregateData();
+                    }
+                    else {
+                        timeSinceReload += 1;
+                        $("#last_reload").html(timeSinceReload);
+                    }
+                }
+                else{
+                    $("#last_reload").html("-");
+                }
+            }, 1000);
+
+        </script>
+        {% endblock %}
