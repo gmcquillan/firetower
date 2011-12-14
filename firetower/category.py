@@ -23,7 +23,6 @@ TIME_SLICES = {
     "week": WEEK
 }
 
-
 class TimeSeries(object):
     def __init__(self, redis_conn, cat_id):
         """Create a time series instance for a category

@@ -8,7 +8,7 @@ import time
 from optparse import OptionParser
 
 from firetower import config
-from firetower.redis_util import Redis
+from firetower import redis_util
 
 """maildir_client
 
@@ -32,7 +32,8 @@ def main():
     conn = imaplib.IMAP4_SSL(conf.imap_host)
     imap_user = conf.imap_user
 
-    queue = Redis(host=conf.redis_host, port=conf.redis_port, redis_db=0)
+    queue = redis_util.get_redis_conn(
+        host=conf.redis_host, port=conf.redis_port, redis_db=conf.redis_db)
 
     processed = 0
 
@@ -80,7 +81,7 @@ def main():
 
                 # We don't huge signatures clogging the classification
                 if len(ft_dict['sig']) < 10000 and isinstance(ft_dict['sig'], str):
-                    queue.push(conf.queue_key, json.dumps(ft_dict))
+                    queue.lpush(conf.queue_key, json.dumps(ft_dict))
                 processed += 1
                 if not processed % 100:
                     print "Processed: %s" %processed

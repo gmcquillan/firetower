@@ -9,10 +9,32 @@
             </div>
             <div id="legend"></div>
             <div id="key"></div>
+            Filter out categories with fewer than <input type="text" id="filter_threshold" value="5" /> hits.
+            <div id="reload">
+            Auto reload: <input type="checkbox" id="reload_check" /><br />
+            <div id="set_reload">Reload every <input type="text" id="reload_input" value="60"/> seconds</div>
+            Last updated <span id="last_reload">-</span> seconds ago.<br />
+            <select name="slice" id="slice_selection">
+                {% for element in time_slice_options %}
+                <option value="{{ element }}">{{ element }}</option>
+                {% endfor %}
+            </select>
+            </div>
         </div>
 
         <script type="text/javascript">
+            var timeSinceReload = 0;
+            var reloadEvery = 0;
             var catData = new Array();
+            var filterThreshold = 0;
+            var catCounts = new Array();
+            {% if time_slice %}
+            var timeSlice = '{{ time_slice }}';
+            {% else %}
+            var timeSlice = "minute";
+            {% endif %}
+
+            $("#slice_selection").val(timeSlice);
 
             var timeseriesData = new Array();
             // Hashmap holding the currently graphed timeseries
@@ -70,17 +92,21 @@
                 else {
                     link = "<a id='" + label + "_link' class='addSeries' href='#'>+</a>"
                 }
-                return label + "&nbsp;" + link;
+                var human_name = catData[label]["human_name"];
+                return human_name + "&nbsp;" + link;
             }
 
             var loadGraphData = function(){
+                filterThreshold = parseInt($("#filter_threshold").val());
                 // Empty array to hold chart data
                 var chartData = new Array();
                 for (cat in graphedData) {
                     // Store category name & data for chart
-                    chartData.push(
-                        { label: cat, data: graphedData[cat] }
-                    )
+                    if (catCounts[cat] > filterThreshold){
+                        chartData.push(
+                            { label: cat, data: graphedData[cat] }
+                        )
+                    }
                 }
 
                 drawAggChart(chartData);
@@ -89,12 +115,10 @@
             var getAggregateData = function() {
                 $("#loadingMsg").show();
                 getCategoryMetadata();
+                timeSlice = $("#slice_selection").val();
+
                 var handler = $.ajax({
-                    {% if time_slice %}
-                    url: "/api/categories/timeseries/?time_slice={{ time_slice }}",
-                    {% else %}
-                    url: "/api/categories/timeseries",
-                    {% endif %}
+                    url: "/api/categories/timeseries/?time_slice=" + timeSlice,
                     success: function(returnedData, httpStatus, xhr){
                         timeseriesData = JSON.parse(returnedData);
 
@@ -108,6 +132,7 @@
                             for (var i=0, arr; arr=timeseriesData[cat][i]; i++) {
                                 catTotal += arr[1];
                             }
+                            catCounts[cat] = catTotal;
 
                             // Get human-readable category name
                             getCategoryName(cat, catTotal);
@@ -155,7 +180,7 @@
                         '<div class="keyEntry" id="'+catId+'"></div>')
                 }
 
-                $("#"+catId).html('<div class="catTotal"><h1>'+catTotal+'</h1></div><div class="catName"><a href="/category/'+catId+'">'+catName+'</a></div>')
+                $("#"+catId).html('<div class="catTotal"><h1>'+catTotal+'</h1></div><div class="catName"><a href="/category/'+catId+'/?time_slice='+timeSlice+'">'+catName+'</a></div>')
             }
 
             function showTooltip(x, y, contents) {
@@ -214,10 +239,40 @@
                     previousPoint = null;
                 }
             });
+
+            $("#aggregatePlaceholder").bind("plotclick", function (event, pos, item) {
+                if (item) {
+                    window.open('/category/' + item.series.label + "/?time_slice=" + timeSlice)
+                }
+            });
+
             $(function () {
                 // Get default timeseries data for all categories
                 // & draw chart
                 getAggregateData();
             });
+
+            $("#filter_threshold").bind("keyup", loadGraphData)
+            $("#slice_selection").bind("change", getAggregateData)
+
+            setInterval(function() {
+                var reload_check = $("#reload_check");
+                if (reload_check.is(':checked')){
+                    var reload_input = $("#reload_input");
+                    reloadEvery = parseInt(reload_input.val())
+                    if (reloadEvery < timeSinceReload){
+                        timeSinceReload = 0;
+                        getAggregateData();
+                    }
+                    else {
+                        timeSinceReload += 1;
+                        $("#last_reload").html(timeSinceReload);
+                    }
+                }
+                else{
+                    $("#last_reload").html("-");
+                }
+            }, 1000);
+
         </script>
         {% endblock %}

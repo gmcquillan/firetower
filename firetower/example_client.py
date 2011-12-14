@@ -27,7 +27,7 @@ class TestClient(client.Client):
     def run(self, num_events):
         for i in xrange(0, num_events):
             # Semi-randomly seed the 'sig' key in our fake errors
-            do_multiply = random.randint(0, 9) # how often to multple 1/10 now.
+            do_multiply = 1#random.randint(0, 9) # how often to multple 1/10 now.
             sig_multiple = random.randint(2, 100000) # how much to multiple by.
             fake_sig = random.choice(FAKE_SIGS) + str(random.randint(100, 999))
             if do_multiply == 0:
@@ -49,7 +49,7 @@ def main():
 
     parser.add_option(
         '-n', '--num', action='store', dest='num_events', type='int',
-        default=1000, help='Number of events to send to Firetower.')
+        default=10000, help='Number of events to send to Firetower.')
 
     (options, args) = parser.parse_args()
 

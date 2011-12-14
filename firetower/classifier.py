@@ -67,7 +67,7 @@ class Levenshtein(Classifier):
             return False
 
     def str_ratio(self, exemplar_str, sig_str,
-            small_sig_size=50, medium_sig_size=2000):
+            small_sig_size=100, medium_sig_size=2000):
         """Return the ratio of similarity between two strings; ignore spaces.
 
         Args:

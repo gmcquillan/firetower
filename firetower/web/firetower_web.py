@@ -22,17 +22,22 @@ DEFAULT_TIME_SLICE = 300000
 
 app = Flask(__name__)
 
+def get_time_slice_options():
+    slices = category.TIME_SLICES.items()
+    slices.sort(key=lambda x: x[1])
+    return [x[0] for x in slices]
+
 @app.route("/")
-@app.route("/aggregate")
+@app.route("/aggregate/")
 def aggregate():
     slice = request.args.get("time_slice", None)
-    kwargs = {}
+    kwargs = {"time_slice_options": get_time_slice_options()}
     if slice:
         kwargs["time_slice"] = slice
     return render_template("aggregate.html", **kwargs)
 
 
-@app.route("/api/category/new", methods=["POST"])
+@app.route("/api/category/new/", methods=["POST"])
 def cat_new():
     """For creating new signature categories manually."""
 
@@ -51,10 +56,15 @@ def cat_new():
     return flask.jsonify(new_cat.to_dict())
 
 
-@app.route("/category/<cat_id>")
+@app.route("/category/<cat_id>/")
 def cat_chart(cat_id=None):
+    kwargs = category.Category(REDIS, cat_id=cat_id).to_dict()
+    slice = request.args.get("time_slice", None)
+    if slice:
+        kwargs["time_slice"] = slice
+
     return render_template(
-        "category-chart.html", cat_id=cat_id)
+        "category.html", cat_id=cat_id, **kwargs)
 
 
 @app.route("/api/categories/")
@@ -72,12 +82,11 @@ def base_timeseries(cat_id=None):
     end = request.args.get("end")
 
     slice = request.args.get("time_slice", None)
-    print slice
 
     if get_all:
         if cat_id:
             return category.Category(
-                redis, cat_id=cat_id).timeseries.all(time_slice=slice)
+                REDIS, cat_id=cat_id).timeseries.all(time_slice=slice)
         else:
             time_series = {}
             for cat in category.Category.get_all_categories(REDIS):
@@ -93,8 +102,8 @@ def base_timeseries(cat_id=None):
 
         if cat_id:
             return [
-                (x.timestamp*1000, x.count) for x in
-                category.Category(redis, cat_id=cat_id).timeseries.range(
+                [x.timestamp*1000, x.count] for x in
+                category.Category(REDIS, cat_id=cat_id).timeseries.range(
                     start, end, time_slice=slice
                 )
             ]
@@ -115,7 +124,7 @@ def categories_api():
 
 @app.route("/api/categories/<category_id>/timeseries/")
 def category_api(category_id):
-    return flask.jsonify(base_timeseries(category_id))
+    return flask.jsonify({category_id: base_timeseries(category_id)})
 
 
 def main():

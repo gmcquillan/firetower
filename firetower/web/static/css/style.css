@@ -67,7 +67,7 @@ a:hover {
 /** Individual category chart **/
 
 #categoryPlaceholder {
-    margin-left: 20px;
+    margin: auto;
     width: 800px;
     height: 400px;
     font-family: Myriad Pro, Helvetica, Arial, sans-serif;
