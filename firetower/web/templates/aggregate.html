@@ -1,9 +1,13 @@
         {% extends "base.html"  %}
         {% block title %}
-            <h1> Firetower - Total Errors per Category </h1>
+            <h1> Firetower - Errors Across all Categories </h1>
         {% endblock %}
         {% block content %}
         <div id="aggregate">
+            <div id="totalsPlaceholder">
+                <div id="loadingMsg">Loading...</div>
+            </div>
+            <div id="totalsLegend"></div>
             <div id="aggregatePlaceholder">
                 <div id="loadingMsg">Loading...</div>
             </div>
@@ -25,9 +29,14 @@
         <script type="text/javascript">
             var timeSinceReload = 0;
             var reloadEvery = 0;
+            // Stores category metadata
             var catData = new Array();
+            // Categories with counts lower than this won't be graphed
             var filterThreshold = 0;
+            // array consisting of category_id: category count
             var catCounts = new Array();
+            // array of timestamp: count for all categories
+            var totalCounts = new Array();
             {% if time_slice %}
             var timeSlice = '{{ time_slice }}';
             {% else %}
@@ -58,6 +67,22 @@
                         catData = JSON.parse(jsonData);
                     }
                 });
+            }
+
+            // Turn a local timestamp into a GMT stamp with the same time string
+            // e.g. 2012 Dec 12 13:00 PST -> 2012 Dec 12 13:00 GMT
+            // This means Flot will give local time on the x-axis
+            var localToGmt = function(ts){
+                var d = new Date(ts);
+                var d1 = new Date(d.getTime() - (d.getTimezoneOffset()*60*1000));
+                return d1.getTime();
+            }
+
+            // Inverse of localToGmt
+            var gmtToLocal = function(ts){
+                var d = new Date(ts);
+                var d1 = new Date(d.getTime() + (d.getTimezoneOffset()*60*1000));
+                return d1.getTime();
             }
 
             var toggleSeries = function(link, add){
@@ -108,8 +133,13 @@
                         )
                     }
                 }
+                var totalChartData = new Array();
+                for (ts in totalCounts){
+                    totalChartData.push([parseInt(ts), totalCounts[ts]])
+                }
 
                 drawAggChart(chartData);
+                drawTotalsChart(totalChartData);
             }
 
             var getAggregateData = function() {
@@ -121,6 +151,17 @@
                     url: "/api/categories/timeseries/?time_slice=" + timeSlice,
                     success: function(returnedData, httpStatus, xhr){
                         timeseriesData = JSON.parse(returnedData);
+                        totalCounts = new Array();
+                        catCounts = new Array();
+
+                        for (cat in timeseriesData){
+                            var temp = new Array();
+                            for (var i=0; i < timeseriesData[cat].length; i++){
+                                var entry = timeseriesData[cat][i];
+                                temp.push([localToGmt(entry[0]), entry[1]])
+                            }
+                            timeseriesData[cat] = temp;
+                        }
 
                         for (cat in timeseriesData) {
                             if (!(cat in graphedData) || graphedData[cat].length > 0){
@@ -131,6 +172,11 @@
                             var catTotal = 0;
                             for (var i=0, arr; arr=timeseriesData[cat][i]; i++) {
                                 catTotal += arr[1];
+                                var totalKey = arr[0].toString()
+                                if (!(totalKey in totalCounts)){
+                                    totalCounts[totalKey] = 0;
+                                }
+                                totalCounts[totalKey] += parseInt(arr[1]);
                             }
                             catCounts[cat] = catTotal;
 
@@ -166,6 +212,26 @@
                 );
             }
 
+            var drawTotalsChart = function(chartData) {
+                $("#loadingMsg").hide();
+                $.plot(
+                    $("#totalsPlaceholder"),
+                    [{label: "Total hits across all categories", data: chartData}],
+                    {
+                        series: {
+                            lines: { show: true },
+                            points: { show: true }
+                        },
+                        xaxis: { mode: "time" },
+                        yaxis: { min: 1 },
+                        grid: { hoverable: true, clickable: true },
+                        legend: {
+                            container: "#totalsLegend",
+                        }
+                    }
+                );
+            }
+
             var getCategoryName = function(catId, catTotal) {
                 var catName = catData[catId].human_name;
                 writeAggKey(catId, catName, catTotal);
@@ -183,8 +249,8 @@
                 $("#"+catId).html('<div class="catTotal"><h1>'+catTotal+'</h1></div><div class="catName"><a href="/category/'+catId+'/?time_slice='+timeSlice+'">'+catName+'</a></div>')
             }
 
-            function showTooltip(x, y, contents) {
-                $('<div id="tooltip">' + contents + '</div>').css( {
+            function showTooltip(div_id, x, y, contents) {
+                $('<div id="'+ div_id +'">' + contents + '</div>').css( {
                     position: 'absolute',
                     display: 'none',
                     top: y + 5,
@@ -209,33 +275,62 @@
                         var x = item.datapoint[0].toFixed(2),
                             y = item.datapoint[1].toFixed(2);
 
-                        var catData = "";
-                        $.ajax({
-                            async: false,
-                            url: "/api/categories/",
-                            success: function(jsonData, httpStatus, xhr){
-                                catData = JSON.parse(jsonData);
-                            }
-                        });
-
-                        var date = new Date(Math.floor(x));
-                        var date_str = date.getFullYear() + "/" + date.getMonth() + "/" + date.getDay();
-                        var time_str = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+                        var date = new Date(gmtToLocal(Math.floor(x)));
                         for(var cat in catData){
                             if (item.series.label == cat){
                                 cat_name = catData[cat]["human_name"];
                             }
                         }
-                        var tooltip_msg = "At " + date_str + " " + time_str + " " + " category " + cat_name  + " got " + y + " hits"
+                        var tooltip_msg = (
+                            "At " + date.toLocaleDateString() +
+                            " " + date.toLocaleTimeString() +
+                            " " + " category " + cat_name  +
+                            " got " + y + " hits"
+                        );
 
                         showTooltip(
-                            item.pageX, item.pageY,
-                            tooltip_msg
+                            "tooltip", item.pageX, item.pageY, tooltip_msg
                         );
                     }
                 }
                 else {
                     $("#tooltip").remove();
+                    previousPoint = null;
+                }
+            });
+
+            var totalsPreviousPoint = null;
+            $("#totalsPlaceholder").bind("plothover", function (event, pos, item) {
+                $("#totalsX").text(pos.x.toFixed(2));
+                $("#totalsY").text(pos.y.toFixed(2));
+
+                if (item) {
+                    if (totalsPreviousPoint != item.dataIndex) {
+                        totalsPreviousPoint = item.dataIndex;
+
+                        $("#totalsTooltip").remove();
+                        var x = item.datapoint[0].toFixed(2),
+                            y = item.datapoint[1].toFixed(2);
+
+                        var date = new Date(gmtToLocal(Math.floor(x)));
+                        for(var cat in catData){
+                            if (item.series.label == cat){
+                                cat_name = catData[cat]["human_name"];
+                            }
+                        }
+                        var tooltip_msg = (
+                            "At " + date.toLocaleDateString() +
+                            " " + date.toLocaleTimeString() +
+                            " " + " we had " + y + " errors."
+                        );
+
+                        showTooltip("totalsTooltip", item.pageX, item.pageY,
+                            tooltip_msg
+                        );
+                    }
+                }
+                else {
+                    $("#totalsTooltip").remove();
                     previousPoint = null;
                 }
             });
