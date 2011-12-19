@@ -13,7 +13,7 @@
             </div>
             <div id="legend"></div>
             <div id="key"></div>
-            Graph the last <input type="text" id="last_x_minutes" /> minutes.<br />
+            Graph the last <input type="text" id="last_x_minutes" value="60"/> minutes.<br />
             Filter out categories with fewer than <input type="text" id="filter_threshold" value="5" /> hits.
             <div id="reload">
             Auto reload: <input type="checkbox" id="reload_check" /><br />
@@ -160,6 +160,7 @@
                 for (ts in totalCounts){
                     totalChartData.push([parseInt(ts), totalCounts[ts]])
                 }
+                totalChartData.sort(function(a,b){ return a[0]-b[0]; });
 
                 drawAggChart(chartData);
                 drawTotalsChart(totalChartData);
@@ -169,6 +170,9 @@
                 $("#loadingMsg").show();
                 getCategoryMetadata();
                 timeSlice = $("#slice_selection").val();
+
+                // Clear out the current key
+                $("#key").html("");
 
                 var handler = $.ajax({
                     url: getTimeseriesUrl(),
@@ -262,7 +266,6 @@
 
             // Write key for aggregate chart
             var writeAggKey = function(catId, catName, catTotal) {
-
                 // Add category name & totals to key
                 if ($("#"+catId).length === 0){
                     $("#key").append(

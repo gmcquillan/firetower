@@ -110,10 +110,12 @@ def base_timeseries(cat_id=None):
         else:
             time_series = {}
             for cat in category.Category.get_all_categories(REDIS):
-                time_series[cat.cat_id] = [
-                (x.timestamp*1000, x.count) for x in
-                cat.timeseries.range(start, end, time_slice=slice)
-            ]
+                data = [
+                    (x.timestamp*1000, x.count) for x in
+                    cat.timeseries.range(start, end, time_slice=slice)
+                ]
+                if data:
+                    time_series[cat.cat_id] = data
             return time_series
 
 
