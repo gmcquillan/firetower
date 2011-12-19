@@ -39,6 +39,6 @@ setup(name="Firetower",
         'logbook',
         'redis>2.4.9',
         'PyYAML',
-        'python-dateutil',
+        'python-dateutil==1.5',
         ],
       )
