@@ -13,6 +13,7 @@
             </div>
             <div id="legend"></div>
             <div id="key"></div>
+            Graph the last <input type="text" id="last_x_minutes" /> minutes.<br />
             Filter out categories with fewer than <input type="text" id="filter_threshold" value="5" /> hits.
             <div id="reload">
             Auto reload: <input type="checkbox" id="reload_check" /><br />
@@ -85,6 +86,23 @@
                 return d1.getTime();
             }
 
+            var getTimeseriesUrl = function(){
+                var url_args = "?time_slice=" + timeSlice
+                var last_x_minutes = $("#last_x_minutes").val();
+                if (last_x_minutes.length > 0){
+                    var start = new Date();
+                    start.setMinutes(start.getMinutes() - parseInt(last_x_minutes))
+                    var end = new Date();
+                    url_args = (
+                        url_args +
+                        "&start=" + encodeURIComponent(start.toUTCString()) +
+                        "&end=" + encodeURIComponent(end.toUTCString())
+                    )
+                }
+
+                return "/api/categories/timeseries/" + url_args;
+            }
+
             var toggleSeries = function(link, add){
                 var link_id = link.attr("id");
                 var cat_id = link_id.replace("_link", "")
@@ -122,7 +140,12 @@
             }
 
             var loadGraphData = function(){
-                filterThreshold = parseInt($("#filter_threshold").val());
+                var filterThresholdStr = $("#filter_threshold").val();
+                if (filterThresholdStr.length === 0){
+                    filterThresholdStr = "0";
+                }
+                filterThreshold = parseInt(filterThresholdStr);
+
                 // Empty array to hold chart data
                 var chartData = new Array();
                 for (cat in graphedData) {
@@ -148,7 +171,7 @@
                 timeSlice = $("#slice_selection").val();
 
                 var handler = $.ajax({
-                    url: "/api/categories/timeseries/?time_slice=" + timeSlice,
+                    url: getTimeseriesUrl(),
                     success: function(returnedData, httpStatus, xhr){
                         timeseriesData = JSON.parse(returnedData);
                         totalCounts = new Array();
@@ -348,6 +371,7 @@
             });
 
             $("#filter_threshold").bind("keyup", loadGraphData)
+            $("#last_x_minutes").bind("keyup", getAggregateData)
             $("#slice_selection").bind("change", getAggregateData)
 
             setInterval(function() {

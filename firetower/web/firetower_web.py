@@ -94,8 +94,8 @@ def base_timeseries(cat_id=None):
             return time_series
     else:
         if start and end:
-            start = calendar.timegm(parser.parse(request.form["start"]))
-            end = calendar.timegm(parser.parse(request.form["end"]))
+            start = calendar.timegm(parser.parse(start).timetuple())
+            end = calendar.timegm(parser.parse(end).timetuple())
         else:
             end = time.time()
             start = end-DEFAULT_TIME_SLICE
