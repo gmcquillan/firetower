@@ -185,8 +185,8 @@ class Events(object):
             num_events: int, number of events to return.
         Returns:
             list, the most recent events up to num_events.
-        """ 
-        return self.range(-1, int(num_events))
+        """
+        return self.range(int(num_events).__neg__(), -1)
 
     def recent_signatures(self, num_sigs):
         """Return a list of recent sigatures."""
@@ -260,11 +260,16 @@ class Category(object):
         if event and self.events:
             self.events.add_event(event)
 
-    def to_dict(self, num_recent=1):
+    def to_dict(self, num_recent=5):
         """Return a dictionary representation of this cats metadata
 
         Args:
             num_recent: int, number of recent categorizations to include.
+            defaults to five.
+        Returns:
+            dict, containing string value of signature, human readbable name
+            of the category, the classification threshold, and a list of the
+            most recent event signatures classified as this category.
         """
         return {
             self.SIGNATURE_KEY: self.signature,

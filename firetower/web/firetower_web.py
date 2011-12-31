@@ -37,25 +37,6 @@ def aggregate():
     return render_template("aggregate.html", **kwargs)
 
 
-@app.route("/api/category/new/", methods=["POST"])
-def cat_new():
-    """For creating new signature categories manually."""
-
-    sig = request.form.get("sig", None)
-    if not sig:
-        abort(500)
-    thresh = request.form.get("thresh")
-    human = request.form.get("human")
-    conn = REDIS.conn
-    new_cat = category.Category.create(conn, sig)
-    if thresh:
-        new_cat._set_threshold(thresh)
-    if human:
-        new_cat._set_human(human)
-
-    return flask.jsonify(new_cat.to_dict())
-
-
 @app.route("/category/<cat_id>/")
 def cat_chart(cat_id=None):
     kwargs = category.Category(REDIS, cat_id=cat_id).to_dict()
@@ -74,6 +55,25 @@ def cat_route():
         ret[cat.cat_id] = cat.to_dict()
 
     return flask.jsonify(ret)
+
+
+@app.route("/api/category/new/", methods=["POST"])
+def cat_new():
+    """For creating new signature categories manually."""
+
+    sig = request.form.get("sig", None)
+    if not sig:
+        abort(500)
+    thresh = request.form.get("thresh")
+    human = request.form.get("human")
+    conn = REDIS.conn
+    new_cat = category.Category.create(conn, sig)
+    if thresh:
+        new_cat._set_threshold(thresh)
+    if human:
+        new_cat._set_human(human)
+
+    return flask.jsonify(new_cat.to_dict())
 
 
 def base_timeseries(cat_id=None):

@@ -16,7 +16,16 @@
             <a href="/aggregate">Back to aggregate page</a>
             </div>
             {{ cat_id }}
+            <h3>Category Signature</h3>
             <pre>{{ signature }}</pre>
+            <div id="events">
+                <h3>Recent Events Categorized:</h3>
+                <ul>
+                {% for event in recent_signatures %}
+                    <li><pre>{{event}}</pre></li>
+                {% endfor %}
+                </ul>
+            </div>
         </div>
 
         <script type="text/javascript">
