@@ -178,6 +178,22 @@ class Events(object):
         if ts_increment:
             self.redis_conn.hincrby("counter_" + self.cat_id, timestamp, 1)
 
+    def get_recent(self, num_events):
+        """Return a list of recent events up to the num specified.
+
+        Args:
+            num_events: int, number of events to return.
+        Returns:
+            list, the most recent events up to num_events.
+        """ 
+        return self.range(-1, int(num_events))
+
+    def recent_signatures(self, num_sigs):
+        """Return a list of recent sigatures."""
+
+        events = self.get_recent(num_sigs)
+        return [json.loads(event)['sig'] for event in events]
+
     def range(self, start, end):
         """Return a range of events
 
@@ -244,12 +260,17 @@ class Category(object):
         if event and self.events:
             self.events.add_event(event)
 
-    def to_dict(self):
-        """Return a dictionary representation of this cats metadata"""
+    def to_dict(self, num_recent=1):
+        """Return a dictionary representation of this cats metadata
+
+        Args:
+            num_recent: int, number of recent categorizations to include.
+        """
         return {
             self.SIGNATURE_KEY: self.signature,
             self.HUMAN_NAME_KEY: self.human_name,
             self.THRESHOLD_KEY: self.threshold,
+            "recent_signatures": self.events.recent_signatures(num_recent)
         }
 
     def recategorise(self, default_threshold, archive_time=None):
