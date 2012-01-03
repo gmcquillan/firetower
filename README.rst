@@ -13,6 +13,11 @@ See the Syslog RFC_.
 
 .. _RFC: http://tools.ietf.org/html/rfc5424
 
+Example Aggregate Graph Output
+------------------------------
+
+.. image:: http://dl.dropbox.com/u/5586906/screenshots/firetower_aggregate_example.png
+
 
 Basic Workflow
 ----------------
