@@ -240,6 +240,8 @@ class Category(object):
     SIGNATURE_KEY = "signature"
     HUMAN_NAME_KEY = "human_name"
     THRESHOLD_KEY = "threshold"
+    STDEV_KEY = "stdev"
+    MEAN_KEY = "mean"
 
     def __init__(self, redis_conn, signature=None, cat_id=None, event=None):
         self.conn = redis_conn
@@ -436,7 +438,6 @@ class Category(object):
         try:
             thresh = float(thresh_str)
         except ValueError as e:
-            # TODO: Need some error handling/logging
             raise e
         else:
             return thresh
@@ -449,3 +450,49 @@ class Category(object):
         )
 
     threshold = property(_get_threshold, _set_threshold)
+
+    def _get_stdev(self):
+        mean_str = self.conn.hget(
+            self.CAT_META_HASH, "%s:%s" %(self.cat_id, self.STDEV_KEY)
+        )
+        if not stdev_str:
+            return None
+
+        try:
+            stdev = float(stdev_str)
+        except ValueError as e:
+            raise e
+        else:
+            return stdev
+
+    def _set_stdev(self, value):
+        return self.conn.hset(
+            self.CAT_META_HASH,
+            "%s:%s" %(self.cat_id, self.STDEV_KEY),
+            value
+        )
+
+    stdev = property(_get_stdev, _set_stdev)
+
+    def _get_mean(self):
+        mean_str = self.conn.hget(
+            self.CAT_META_HASH, "%s:%s" %(self.cat_id, self.MEAN_KEY)
+        )
+        if not mean_str:
+            return None
+
+        try:
+            mean = float(mean_str)
+        except ValueError as e:
+            raise e
+        else:
+            return mean
+
+    def _set_mean(self, value):
+        return self.conn.hset(
+            self.CAT_META_HASH,
+            "%s:%s" %(self.cat_id, self.MEAN_KEY),
+            value
+        )
+
+    mean = property(_get_mean, _set_mean)
