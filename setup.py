@@ -28,6 +28,7 @@ setup(name="Firetower",
       entry_points={
         'console_scripts': [
             'firetower-server=firetower.firetower:main',
+            'firetower-admin=firetower.admin:main',
             'firetower-display=firetower.display:main',
             'firetower-client=firetower.example_client:main',
             'firetower-web=firetower.web.firetower_web:main',
