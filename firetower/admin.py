@@ -1,3 +1,4 @@
+import time
 import simplejson as json
 import sys
 
@@ -68,7 +69,7 @@ class Admin(object):
                         self.classifier.str_ratio(cat.signature, event['sig']))
             cat.mean, cat.stdev = self.mean_stdev(ratios)
 
-    def run(self, options, args):
+    def run(self, args):
         """Run set of jobs specified on commandline or config."""
 
         self.logger.info('Running with tasks: %s' % (','.join(args)))
@@ -89,9 +90,16 @@ def main():
     parser.add_option(
             '-c', '--conf', action='store', dest='conf_path',
             help='Path to YAML configuration file.')
+    parser.add_option(
+            '-d', '--delay', action='store', dest='delay',
+            type='int', default=60,
+            help='Delay between runs of administrative tasks (minutes).')
 
     (options, args) = parser.parse_args()
 
     conf = config.Config(options.conf_path)
     admin = Admin(conf)
-    admin.run(options, args)
+    wait_seconds = options.delay * 60
+    while 1:
+        admin.run(args)
+        time.sleep(wait_seconds)
