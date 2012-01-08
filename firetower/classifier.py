@@ -126,5 +126,4 @@ class Levenshtein(Classifier):
             exemplar_str = json.loads(last_data[0])['sig']
 
         if self.is_similar(sig, exemplar_str, thresh):
-            #log.debug('Found match for category id: %s' % (sig,))
             return True

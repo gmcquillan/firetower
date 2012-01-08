@@ -4,9 +4,12 @@ import hashlib
 import simplejson as json
 import time
 
+from logbook import Logger
+
 import classifier
 import redis_util
 
+log = Logger('Firetower-category')
 TSTuple = namedtuple("TimeSeriesTuple", ("timestamp", "count"))
 
 SECOND = 1
@@ -334,6 +337,7 @@ class Category(object):
         """
         categories = cls.get_all_categories(queue)
         matched_cat = None
+        start = time.time()
         for cat in categories:
             if classifier.check_message(cat, error, threshold):
                 cat.events.add_event(error)
@@ -342,6 +346,10 @@ class Category(object):
         else:
             cat_sig = error['sig']
             matched_cat = cls.create(queue, cat_sig, event=error)
+
+        end = time.time()
+        log.info('Classification took %.2f seconds for matched category %s' % (
+            end - start, match_cat.cat_id))
         return matched_cat
 
     @classmethod
