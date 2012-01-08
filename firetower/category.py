@@ -349,7 +349,7 @@ class Category(object):
 
         end = time.time()
         log.info('Classification took %.2f seconds for matched category %s' % (
-            end - start, match_cat.cat_id))
+            end - start, matched_cat.cat_id))
         return matched_cat
 
     @classmethod
