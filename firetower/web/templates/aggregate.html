@@ -1,62 +1,83 @@
         {% extends "base.html"  %}
-        {% block title %}
-            <h1> Firetower - Errors Across all Categories </h1>
-        {% endblock %}
         {% block content %}
-        <div id="aggregate">
-            <div id="totalsPlaceholder">
-                <div id="loadingMsg">Loading...</div>
+        <header id="overview" class="jumbotron masthead">
+        <br />
+        <br />
+        <div class="container">
+            <div class="span4">
+                <h1>Aggregate</h1>
             </div>
-            <div id="totalsLegend"></div>
-            <div id="aggregatePlaceholder">
-                <div id="loadingMsg">Loading...</div>
-            </div>
-            <div id="legend"></div>
-            <div id="key"></div>
-            <div class="span12">
-                <form _lpcheck="1">
-                    <legend><h2>Modify graph criteria</h2></legend>
-                    <div class="clearfix">
-                        <label for="last_x_minutes">Graph the last</label>
-                        <div class="input">
-                            <input class="medium" id="last_x_minutes" value="60" size="10" type="text" />
+                 <div class="inner">
+                    <div class="container">
+                        <div id="aggregate">
+                            <div id="totalsPlaceholder">
+                                <div id="loadingMsg">Loading...</div>
+                            </div>
+                            <div id="totalsLegend"></div>
+                            <div id="aggregatePlaceholder">
+                                <div id="loadingMsg">Loading...</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="clearfix">
-                        <label for="filter_threshold">Filter out categories with fewer than</label>
-                        <div class="input">
-                            <input class="small" id="filter_threshold" value="5" size="5" type="text" />
+                </div>
+                <div id="legend"></div>
+                <div id="key"></div>
+            </header>
+                <div class="span12">
+                   <section id="forms">
+                        <div class="page-header">
+                            <h3>Modify graph criteria</h3>
                         </div>
-                    </div>
-                    <div class="clearfix">
-                        <label for="reload_check">
-                            Auto reload <input type="checkbox" name="reload_check" id="realod_check" />
-                        </label>
-                    </div>
-                    <div class="clearfix">
-                        <label for="set_reload">
-                            Reload Frequency
-                        </label>
-                        <input type="text" id="reload_input" value="60" /> seconds<br />
-                        <span> Last updated <span id="last_reload">-</span> seconds ago. <br />
-                    </div>
-                    <div class="clearfix">
-                        <label for="slice_selection">
-                            timeslice
-                        </label>
-                        <select name="slice" id="slice_selection">
-                            {% for element in time_slice_options %}
-                            <option value="{{ element }}">{{ element }}</option>
-                            {% endfor %}
+                        <div class="row">
+                            <div class="span12">
+                                <form> 
+                                    <formset>
+                                        <div class="clearfix">
+                                            <label for="last_x_minutes">Graph the last</label>
+                                            <div class="input">
+                                                <input class="xlarge" id="last_x_minutes" value="60" size="10" type="text" />
+                                            </div>
+                                        </div>
+                                        <div class="clearfix">
+                                            <label for="filter_threshold">Filter out categories with fewer than</label>
+                                            <div class="input">
+                                                <input class="xlarge" id="filter_threshold" value="5" size="5" type="text" />
+                                            </div>
+                                        </div>
+                                        <div class="clearfix">
+                                            <label for="reload_check">
+                                                Auto reload <input type="checkbox" name="reload_check" id="realod_check" />
+                                            </label>
+                                        </div>
+                                        <div class="clearfix">
+                                            <label for="set_reload">
+                                                Reload Frequency
+                                            </label>
+                                            <div class="input">
+                                                <input type="text" id="reload_input" value="60" /><br />
+                                            </div>
+                                            <span> Last updated <span id="last_reload">-</span> seconds ago. <br />
+                                        </div>
+                                        <div class="clearfix">
+                                            <label for="slice_selection">
+                                                timeslice
+                                            </label>
+                                            <select name="slice" id="slice_selection">
+                                                {% for element in time_slice_options %}
+                                                <option value="{{ element }}">{{ element }}</option>
+                                                {% endfor %}
 
-                        </select>
-                    </div>
-                    <div class="actions">
-                        <input type="submit" class="btn primary" value="Make it so">
-                    </div>
-
-                </form>
-            </span>
+                                            </select>
+                                        </div>
+                                        <div class="actions">
+                                            <input type="submit" class="btn primary" value="Make it so">
+                                        </div>
+                                    </formset>
+                                </form>
+                            </div> <!-- End span12 -->
+                        </div> <!-- End Row -->
+                    </section>
+                </div>
         </div>
 
         <script type="text/javascript">
@@ -304,7 +325,7 @@
                         '<div class="keyEntry" id="'+catId+'"></div>')
                 }
 
-                $("#"+catId).html('<div class="catTotal"><h1>'+catTotal+'</h1></div><div class="catName"><a href="/category/'+catId+'/?time_slice='+timeSlice+'">'+catName+'</a></div>')
+                $("#"+catId).html('<div class="catTotal"><h4>'+catTotal+'</h4></div><div class="catName"><a href="/category/'+catId+'/?time_slice='+timeSlice+'">'+catName+'</a></div>')
             }
 
             function showTooltip(div_id, x, y, contents) {
