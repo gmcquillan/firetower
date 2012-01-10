@@ -3,22 +3,39 @@
         <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.js?1313656006"></script>
         <script type="text/javascript" src="https://s3.amazonaws.com/com.urbanairship.media/js/jquery.flot.js?1313656006"></script>
         <script type="text/javascript" src="https://raw.github.com/mbostock/d3/v2.5.0/d3.js"></script>
-        <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+        <link rel="stylesheet" href="http://twitter.github.com/bootstrap/1.4.0/bootstrap.min.css">
+        <!-- <link rel="stylesheet" type="text/css" href="/static/css/style.css"> -->
         <title>Firetower</title>
     </head>
     <body>
-    <div id="container">
-    <div id="header">
-        <img class="logo" src="/static/img/logo.png" />
+    <div class="topbar">
+        <div class="topbar-inner">
+            <div class="container-fluid">
+                <a class="brand" href="#">Firetower</a>
+                <ul class="nav">
+                    <li class="active">
+                        <a href="/">Home</a>
+                    </li>
+                    <li>
+                        <a href="#">Categories</a>
+                    </li>
+                    <li>
+                        <a href="#">Settings</a>
+                    </li>
+            </div>
+        </div>
     </div>
-        <div id="main">
-            <div id="title">
+    </div>
+        <div id="container-fluid">
+            <div class="content">
                 {% block title %}
                 {% endblock %}
             </div>
         {% block content %}
         {% endblock %}
+        <footer>
+            <p>firetower-project.org</p>
+        </footer>
         </div>
-    </div>
    </body>
 </html>

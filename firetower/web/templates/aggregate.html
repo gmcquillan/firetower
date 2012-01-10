@@ -13,18 +13,50 @@
             </div>
             <div id="legend"></div>
             <div id="key"></div>
-            Graph the last <input type="text" id="last_x_minutes" value="60"/> minutes.<br />
-            Filter out categories with fewer than <input type="text" id="filter_threshold" value="5" /> hits.
-            <div id="reload">
-            Auto reload: <input type="checkbox" id="reload_check" /><br />
-            <div id="set_reload">Reload every <input type="text" id="reload_input" value="60"/> seconds</div>
-            Last updated <span id="last_reload">-</span> seconds ago.<br />
-            <select name="slice" id="slice_selection">
-                {% for element in time_slice_options %}
-                <option value="{{ element }}">{{ element }}</option>
-                {% endfor %}
-            </select>
-            </div>
+            <div class="span12">
+                <form _lpcheck="1">
+                    <legend><h2>Modify graph criteria</h2></legend>
+                    <div class="clearfix">
+                        <label for="last_x_minutes">Graph the last</label>
+                        <div class="input">
+                            <input class="medium" id="last_x_minutes" value="60" size="10" type="text" />
+                        </div>
+                    </div>
+                    <div class="clearfix">
+                        <label for="filter_threshold">Filter out categories with fewer than</label>
+                        <div class="input">
+                            <input class="small" id="filter_threshold" value="5" size="5" type="text" />
+                        </div>
+                    </div>
+                    <div class="clearfix">
+                        <label for="reload_check">
+                            Auto reload <input type="checkbox" name="reload_check" id="realod_check" />
+                        </label>
+                    </div>
+                    <div class="clearfix">
+                        <label for="set_reload">
+                            Reload Frequency
+                        </label>
+                        <input type="text" id="reload_input" value="60" /> seconds<br />
+                        <span> Last updated <span id="last_reload">-</span> seconds ago. <br />
+                    </div>
+                    <div class="clearfix">
+                        <label for="slice_selection">
+                            timeslice
+                        </label>
+                        <select name="slice" id="slice_selection">
+                            {% for element in time_slice_options %}
+                            <option value="{{ element }}">{{ element }}</option>
+                            {% endfor %}
+
+                        </select>
+                    </div>
+                    <div class="actions">
+                        <input type="submit" class="btn primary" value="Make it so">
+                    </div>
+
+                </form>
+            </span>
         </div>
 
         <script type="text/javascript">
