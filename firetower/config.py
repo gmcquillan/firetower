@@ -51,7 +51,7 @@ class Config(object):
                   'alert_time': 0.5,
                   'queue_key': 'incoming',
                   'timeslices': [300],
-                  'archive_time': 5,
+                  'archive_time': 60,
                   'log_file': 'firetower-server.log',
                   'log_level': 1,
                  }
@@ -66,7 +66,7 @@ class Config(object):
         class_thresh = conf_dict.get('class_thresh', 0.5)
         timeslices = conf_dict.get('timeslices', [300])
         alert_time = conf_dict.get('alert_time', 1.0)
-        archive_time = conf_dict.get('archive_time', 5)
+        archive_time = conf_dict.get('archive_time', 60)
         log_file = conf_dict.get('log_file', 'firetower-server.log')
         log_level = conf_dict.get('log_level', 1)
         imap_user = conf_dict.get('imap_user', '')
