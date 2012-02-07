@@ -1,35 +1,55 @@
         {% extends "base.html"  %}
+        {% block head %}
+            <script type="text/javascript" src="/static/js/firetower.js"></script>
+            <script type="text/javascript">
+                $(document).ready(function() {
+                    firetower();
+                });
+            </script>
+        {% endblock %}
         {% block content %}
-        <script type="text/javascript">
-            src="static/js/firetower.js"></script>
-        </script>
 
         <br />
         <br />
-        <div class="content">
+
+        <div class="container">
             <div class="page-header">
                 <h1>Aggregate</h1>
                 <small>Plots of all categories</small>
             </div>
+
+            <div class="row">
+                <div class="span12" id="totalsPlaceholder">
+                    &nbsp;
+                    <div id="loadingMsg">Loading...</div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="span12" id="totalsLegend">&nbsp;</div>
+            </div>
+            <br />
+
+            <div class="row">
+                <div class="span12" id="aggregatePlaceholder">
+                    &nbsp;
+                    <div id="loadingMsg">Loading...</div>
+                </div>
+            </div>
+            <div class="row"><div class="span12" id="legend">&nbsp;</div></div>
+
+            <table class="table table-striped" id="keyTable">
+                <thead>
+                    <tr><th>Category Name</th><th>Count</th></tr>
+                </thead>
+            </table>
+
+            <br />
+
+
             <div class="row">
                 <div class="span12">
-                    <h2>Put graph data here</h2>
-                    <div id="aggregate">
-                        <div id="totalsPlaceholder">
-                            <div id="loadingMsg">Loading...</div>
-                        </div>
-                        <div id="totalsLegend"></div>
-                        <div id="aggregatePlaceholder">
-                            <div id="loadingMsg">Loading...</div>
-                        </div>
-                        <div id="legend"></div>
-                        <div id="key"></div>
-                    </div> <!-- End aggregate -->
-       
-                </div> <!-- end span12 -->
-                <div class="span4">
                     <h3>Modify Graphs</h3>
-                    <form> 
+                    <form>
                         <formset>
                             <div class="clearfix">
                                 <label for="last_x_minutes">Graph the last</label>
@@ -45,7 +65,7 @@
                             </div>
                             <div class="clearfix">
                                 <label for="reload_check">
-                                    Auto reload <input type="checkbox" name="reload_check" id="realod_check" />
+                                    Auto reload <input type="checkbox" name="reload_check" id="reload_check" />
                                 </label>
                             </div>
                             <div class="clearfix">
@@ -58,7 +78,7 @@
                             </div>
                             <div class="clearfix">
                                 <label for="slice_selection">
-                                    timeslice 
+                                    timeslice
                                 </label>
                                 <select class="small" name="slice" id="slice_selection">
                                     {% for element in time_slice_options %}
@@ -75,6 +95,6 @@
                     </form>
                 </div>
             </div> <!-- end row -->
-        </div> <!-- end of content -->
+        </div> <!-- end of container -->
 
         {% endblock %}

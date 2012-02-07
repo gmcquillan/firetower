@@ -65,7 +65,7 @@ a:hover {
 }
 
 /** Totals chart **/
-#totalsPlaceholder {
+div#totalsPlaceholder {
     margin: auto;
     width: 960px;
     height: 400px;
