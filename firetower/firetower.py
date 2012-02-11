@@ -31,27 +31,10 @@ class Main(object):
         """Get the next error to be categorised"""
         return self.queue.rpop(self.conf.queue_key)
 
-    def run_archiving(self):
-        """Run the timeseries archiving for all categories
-        """
-        now = datetime.datetime.utcnow()
-        if self.last_archive is None:
-            self.last_archive = datetime.datetime.utcnow()
-            return
-
-        delta = datetime.timedelta(seconds=self.conf.archive_time)
-        if self.last_archive < (now - delta):
-            self.logger.debug('Archiving counts older than %s seconds' % (self.conf.archive_time,))
-            for c in category.Category.get_all_categories(self.queue):
-                self.logger.debug('Archiving for %s category' % (c.cat_id))
-                c.timeseries.archive_cat_counts(self.last_archive)
-            self.last_archive = now
-
     def run(self):
         """Drop into a loop pulling errors and categorizing them"""
         while 1:
             err = self.get_error()
-            self.run_archiving()
             if err:
                 parsed = json.loads(err)
                 category.Category.classify(

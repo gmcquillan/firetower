@@ -1,3 +1,4 @@
+import datetime
 import time
 import simplejson as json
 import sys
@@ -34,6 +35,7 @@ class Admin(object):
             host=conf.redis_host, port=conf.redis_port, redis_db=conf.redis_db
         )
         self.classifier = classifier.Levenshtein()
+        self.last_archive = None
 
     # Wrote this to avoid numpy dependencies until we absolutely require them.
     def mean_stdev(self, items):
@@ -69,6 +71,23 @@ class Admin(object):
                         self.classifier.str_ratio(cat.signature, event['sig']))
             cat.mean, cat.stdev = self.mean_stdev(ratios)
 
+    def archive_events(self):
+        """Run the timeseries archiving for all categories."""
+
+        now = datetime.datetime.utcnow()
+        if self.last_archive is None:
+            self.last_archive = datetime.datetime.utcnow()
+            return
+
+        delta = datetime.timedelta(seconds=self.conf.archive_time)
+        if self.last_archive < (now - delta):
+            self.logger.debug('Archiving counts older than %s seconds' % (self.conf.archive_time,))
+            for c in category.Category.get_all_categories(self.queue):
+                self.logger.debug('Archiving for %s category' % (c.cat_id))
+                c.timeseries.archive_cat_counts(self.last_archive)
+            self.last_archive = now
+
+
     def run(self, args):
         """Run set of jobs specified on commandline or config."""
 
@@ -81,6 +100,7 @@ class Admin(object):
                 self.logger.info('Calculating stats for each category')
                 self.calc_stats()
             if arg == 'archive_events':
+                self.archive_events()
                 self.logger.info('Archiving old data from each category')
                 pass
 
