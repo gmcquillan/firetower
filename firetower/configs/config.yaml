@@ -10,7 +10,7 @@ redis_db: 1
 # Queue source for classification
 queue_key: incoming
 
-class_thresh: 0.9
+class_thresh: 0.5
 
 # Time Between Alert Checks
 

@@ -134,10 +134,9 @@ class Levenshtein(Classifier):
             for _half in range(class_type):
                 thresh = self._halve_ratio_dist(thresh)
                 log.debug('Used this default threshold %.4f' % thresh)
-        if ratio > thresh:
-            return True
 
-        return False
+        return ratio > thresh
+
 
     def check_message(self, cat, error, default_thresh):
         """Compare error with messages from a category.
@@ -157,10 +156,6 @@ class Levenshtein(Classifier):
 
         exemplar_str = None
         last_data = cat.events.range(-1, -1)
-        if not last_data:
-            exemplar_str = cat.signature
-        else:
-            exemplar_str = json.loads(last_data[0])['sig']
+        exemplar_str = cat.signature
 
-        if self.is_similar(sig, exemplar_str, thresh, is_custom=is_custom):
-            return True
+        return self.is_similar(sig, exemplar_str, thresh, is_custom=is_custom)
