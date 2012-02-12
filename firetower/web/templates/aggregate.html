@@ -3,98 +3,140 @@
             <script type="text/javascript" src="/static/js/firetower.js"></script>
             <script type="text/javascript">
                 $(document).ready(function() {
-                    firetower();
+                    {% if reload_every %}
+                    firetower.tsConfig.reloadEvery = {{ reload_every }};
+                    {% endif %}
+                    {% if filter_threshold %}
+                    firetower.tsConfig.filterThreshold = {{ filter_threshold }};
+                    {% endif %}
+                    {% if time_slice %}
+                    firetower.tsConfig.timeSlice = {{ time_slice }};
+                    {% endif %}
+                    firetower.init();
+                    $("#graphForm").on("submit", firetower.tsGraphing.handleConfig);
                 });
             </script>
         {% endblock %}
         {% block content %}
+            <br>
+            <br>
 
-        <br />
-        <br />
-
-        <div class="container">
-            <div class="page-header">
-                <h1>Aggregate</h1>
-                <small>Plots of all categories</small>
-            </div>
-
-            <div class="row">
-                <div class="span12" id="totalsPlaceholder">
-                    &nbsp;
-                    <div id="loadingMsg">Loading...</div>
+            <div class="container">
+                <div class="page-header">
+                    <h1>Aggregate</h1><small>Plots of all categories</small>
                 </div>
-            </div>
-            <div class="row">
-                <div class="span12" id="totalsLegend">&nbsp;</div>
-            </div>
-            <br />
 
-            <div class="row">
-                <div class="span12" id="aggregatePlaceholder">
-                    &nbsp;
-                    <div id="loadingMsg">Loading...</div>
+                <div class="row">
+                    <div class="span12" id="totalsPlaceholder">
+                        &nbsp;
+
+                        <div id="loadingMsg">
+                            Loading...
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="row"><div class="span12" id="legend">&nbsp;</div></div>
 
-            <table class="table table-striped" id="keyTable">
-                <thead>
-                    <tr><th>Category Name</th><th>Count</th></tr>
-                </thead>
-            </table>
+                <div class="row">
+                    <div class="span12" id="totalsLegend">
+                        &nbsp;
+                    </div>
+                </div><br>
 
-            <br />
+                <div class="row">
+                    <div class="span12" id="aggregatePlaceholder">
+                        &nbsp;
 
-
-            <div class="row">
-                <div class="span12">
-                    <h3>Modify Graphs</h3>
-                    <form>
-                        <formset>
-                            <div class="clearfix">
-                                <label for="last_x_minutes">Graph the last</label>
-                                <div class="input">
-                                    <input class="small" id="last_x_minutes" />
-                                </div>
-                            </div>
-                            <div class="clearfix">
-                                <label for="filter_threshold">Filter Fewer Than</label>
-                                <div class="input">
-                                    <input class="small" id="filter_threshold" />
-                                </div>
-                            </div>
-                            <div class="clearfix">
-                                <label for="reload_check">
-                                    Auto reload <input type="checkbox" name="reload_check" id="reload_check" />
-                                </label>
-                            </div>
-                            <div class="clearfix">
-                                <label for="set_reload">
-                                    Reload Frequency
-                                </label>
-                                <div class="input">
-                                    <input class="small" type="text" id="reload_input" value="60" /><br />
-                                </div>
-                            </div>
-                            <div class="clearfix">
-                                <label for="slice_selection">
-                                    timeslice
-                                </label>
-                                <select class="small" name="slice" id="slice_selection">
-                                    {% for element in time_slice_options %}
-                                    <option value="{{ element }}">{{ element }}</option>
-                                    {% endfor %}
-
-                                </select>
-                            </div>
-                            <div class="actions">
-                                <input type="submit" class="btn primary" value="Make it so">
-                            </div>
-                            <span>Graph last updated <span id="last_reload">-</span> seconds ago.</span>
-                        </formset>
-                    </form>
+                        <div id="loadingMsg">
+                            Loading...
+                        </div>
+                    </div>
                 </div>
-            </div> <!-- end row -->
-        </div> <!-- end of container -->
 
+                <div class="row">
+                    <div class="span12" id="legend">
+                        &nbsp;
+                    </div>
+                </div>
+
+                <table class="table table-striped" id="keyTable">
+                    <thead>
+                        <tr>
+                            <th>Category Name</th>
+
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                </table><br>
+
+                <div class="row">
+                    <div class="span12">
+                        <form class="form-horizontal" id="graphForm">
+                            <fieldset>
+                                <legend>Modify the Graphs</legend>
+
+                                <div class="control-group">
+                                    <label class="control-label" for="timeSlice">Time slice</label>
+
+                                    <div class="controls">
+                                        <select class="small" name="slice" id="timeSlice">
+                                            {% for element in time_slice_options %}
+                                            <option value="{{ element }}">{{ element }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <p class="help-block">This sets the granularity of the time axis on the graph.</p>
+                                    </div>
+                                </div>
+
+                                <div class="control-group">
+                                    <label class="control-label" for="graphMinutes">Minutes to graph</label>
+
+                                    <div class="controls">
+                                        <input type="text" class="input-xlarge" id="graphMinutes">
+
+                                        <p class="help-block">This will cause the graph to only display the last x minutes of hits.</p>
+                                    </div>
+                                </div>
+
+                                <div class="control-group">
+                                    <label class="control-label" for="filterThreshold">Filter threshold</label>
+
+                                    <div class="controls">
+                                        <input type="text" class="input-xlarge" id="filterThreshold">
+
+                                        <p class="help-block">Any category with fewer than x hits will not be graphed.</p>
+                                    </div>
+                                </div>
+
+                                <div class="control-group">
+                                    <label class="control-label" for="reloadEvery">Time between reloads</label>
+
+                                    <div class="controls">
+                                        <input type="text" class="input-xlarge" id="reloadEvery">
+
+                                        <p class="help-block">If the graph is set to auto reload this is the time in seconds between those reloads.</p>
+                                    </div>
+                                </div>
+
+                                <div class="control-group">
+                                    <label class="control-label" for="autoReload">Auto-Reload</label>
+
+                                    <div class="controls">
+                                        <label class="checkbox"><input type="checkbox" id="autoReload"> If this is set the graph will automatically download the lastest category information.</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Make it so</button>
+                                </div>
+                            </fieldset>
+                        </form>
+                        <ul>
+                            <li id="reload_status"></li>
+                            <li id="filterThreshold_status"></li>
+                            <li id="graphMinutes_status"></li>
+                            <li id="timeSlice_status"></li>
+                        </ul>
+                    </div>
+                </div><!-- end row -->
+            </div><!-- end of container -->
         {% endblock %}

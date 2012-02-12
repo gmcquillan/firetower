@@ -1,255 +1,325 @@
-var firetower = (function(){
-
+var firetower = function() {
+    var previousPoint = null;
+    var totalsPreviousPoint = null;
     var timeSinceReload = 0;
-    var reloadEvery = 0;
-    // Stores category metadata
-    var catData = new Array();
-    // Categories with counts lower than this won't be graphed
-    var filterThreshold = 0;
-    // array consisting of category_id: category count
-    var catCounts = new Array();
-    // array of timestamp: count for all categories
-    var totalCounts = new Array();
-    var timeSlice = "minute";
 
-    $("#slice_selection").val(timeSlice);
-
-    var timeseriesData = new Array();
-    // Hashmap holding the currently graphed timeseries
-    var graphedData = new Array();
-
-    var addSeries = function(){
-        toggleSeries($(this), true);
-        return false;
+    var tsConfig = {
+        reloadEvery: 30,
+        // Categories with counts lower than this won't be graphed
+        filterThreshold: 10,
+        timeSlice:  "minute",
+        autoReload: false,
+        graphMinutes: 0
     }
 
-    var killSeries = function(){
-        toggleSeries($(this), false);
-        return false;
-    }
+    var tsData = (function(){
+        var totalData = {};
+        var catData = {};
+        var catMeta = {};
 
-    var getCategoryMetadata = function(){
-        $.ajax({
-            url: "/api/categories/",
-            async: false,
-            success: function(jsonData, httpStatus, xhr){
-                catData = JSON.parse(jsonData);
-            }
-        });
-    }
-
-    // Turn a local timestamp into a GMT stamp with the same time string
-    // e.g. 2012 Dec 12 13:00 PST -> 2012 Dec 12 13:00 GMT
-    // This means Flot will give local time on the x-axis
-    var localToGmt = function(ts){
-        var d = new Date(ts);
-        var d1 = new Date(d.getTime() - (d.getTimezoneOffset()*60*1000));
-        return d1.getTime();
-    }
-
-    // Inverse of localToGmt
-    var gmtToLocal = function(ts){
-        var d = new Date(ts);
-        var d1 = new Date(d.getTime() + (d.getTimezoneOffset()*60*1000));
-        return d1.getTime();
-    }
-
-    var getTimeseriesUrl = function(){
-        var url_args = "?time_slice=" + timeSlice
-        var last_x_minutes = $("#last_x_minutes").val();
-        if (last_x_minutes.length > 0){
-            var start = new Date();
-            start.setMinutes(start.getMinutes() - parseInt(last_x_minutes))
-            var end = new Date();
-            url_args = (
-                url_args +
-                "&start=" + encodeURIComponent(start.toUTCString()) +
-                "&end=" + encodeURIComponent(end.toUTCString())
-            )
+        var getCategoryMetadata = function(){
+            $.ajax({
+                url: "/api/categories/",
+                async: false,
+                success: function(jsonData, httpStatus, xhr){
+                    for (catId in jsonData){
+                        catMeta[catId] = jsonData[catId];
+                    }
+                }
+            });
         }
 
-        return "/api/categories/timeseries/" + url_args;
-    }
-
-    var toggleSeries = function(link, add){
-        var link_id = link.attr("id");
-        var cat_id = link_id.replace("_link", "")
-        graphedData[cat_id] = add ? timeseriesData[cat_id] : new Array();
-        loadGraphData();
-
-        for (cat_id in graphedData){
-            var link_id = "#" + cat_id + "_link";
-            var new_link = $(link_id);
-            var visible = graphedData[cat_id].length > 0;
-            new_link.html(visible ? "-" : "+");
-            if (!visible){
-                new_link.attr("class", "addSeries")
-            }
+        // Turn a local timestamp into a GMT stamp with the same time string
+        // e.g. 2012 Dec 12 13:00 PST -> 2012 Dec 12 13:00 GMT
+        // This means Flot will give local time on the x-axis
+        var localToGmt = function(ts){
+            var d = new Date(ts);
+            var d1 = new Date(d.getTime() - (d.getTimezoneOffset()*60*1000));
+            return d1.getTime();
         }
 
-        $('.addSeries').unbind('click')
-        $('.killSeries').unbind('click')
-        $('.addSeries').bind('click', addSeries)
-        $('.killSeries').bind('click', killSeries)
-        $("#tooltip").remove();
-        return false;
-    }
-
-    var buildLabel = function(label, series) {
-        var link = "";
-        if (graphedData[label].length > 0){
-            link = "<a id='" + label + "_link' class='killSeries' href='#'>-</a>"
+        // Inverse of localToGmt
+        var gmtToLocal = function(ts){
+            var d = new Date(ts);
+            var d1 = new Date(d.getTime() + (d.getTimezoneOffset()*60*1000));
+            return d1.getTime();
         }
-        else {
-            link = "<a id='" + label + "_link' class='addSeries' href='#'>+</a>"
-        }
-        var human_name = catData[label]["human_name"];
-        return human_name + "&nbsp;" + link;
-    }
 
-    var loadGraphData = function(){
-        var filterThresholdStr = $("#filter_threshold").val();
-        if (filterThresholdStr.length === 0){
-            filterThresholdStr = "0";
-        }
-        filterThreshold = parseInt(filterThresholdStr);
-
-        // Empty array to hold chart data
-        var chartData = new Array();
-        for (cat in graphedData) {
-            // Store category name & data for chart
-            if (catCounts[cat] > filterThreshold){
-                chartData.push(
-                    { label: cat, data: graphedData[cat] }
+        var getTimeseriesUrl = function(){
+            var url_args = "?time_slice=" + tsConfig.timeSlice
+            if (tsConfig.graphMinutes !== 0){
+                var start = new Date();
+                start.setMinutes(start.getMinutes() - tsConfig.graphMinutes)
+                var end = new Date();
+                url_args = (
+                    url_args +
+                    "&start=" + encodeURIComponent(start.toUTCString()) +
+                    "&end=" + encodeURIComponent(end.toUTCString())
                 )
             }
+
+            return "/api/categories/timeseries/" + url_args;
         }
-        var totalChartData = new Array();
-        for (ts in totalCounts){
-            totalChartData.push([parseInt(ts), totalCounts[ts]])
-        }
-        totalChartData.sort(function(a,b){ return a[0]-b[0]; });
 
-        drawAggChart(chartData);
-        drawTotalsChart(totalChartData);
-    }
+        var processCatTs = function(catId, tsList){
+            catData[catId] = {
+                ts: new Array(),
+                total: 0
+            };
 
-    var getAggregateData = function() {
-        $("#loadingMsg").show();
-        getCategoryMetadata();
-        timeSlice = $("#slice_selection").val();
+            for (var i = 0; i < tsList.length; i++){
+                date = localToGmt(tsList[i][0]);
+                count = parseInt(tsList[i][1]);
+                catData[catId]["total"] += count
 
-        // Clear out the current key
-        $(".keyRow").remove();
-
-        var handler = $.ajax({
-            url: getTimeseriesUrl(),
-            success: function(returnedData, httpStatus, xhr){
-                timeseriesData = JSON.parse(returnedData);
-                totalCounts = new Array();
-                catCounts = new Array();
-
-                for (cat in timeseriesData){
-                    var temp = new Array();
-                    for (var i=0; i < timeseriesData[cat].length; i++){
-                        var entry = timeseriesData[cat][i];
-                        temp.push([localToGmt(entry[0]), entry[1]])
-                    }
-                    timeseriesData[cat] = temp;
+                if (!(date in totalData)){
+                    totalData[date] = 0;
                 }
-
-                for (cat in timeseriesData) {
-                    if (!(cat in graphedData) || graphedData[cat].length > 0){
-                        graphedData[cat] = timeseriesData[cat];
-                    }
-
-                    // Sum total instances per category
-                    var catTotal = 0;
-                    for (var i=0, arr; arr=timeseriesData[cat][i]; i++) {
-                        catTotal += arr[1];
-                        var totalKey = arr[0].toString()
-                        if (!(totalKey in totalCounts)){
-                            totalCounts[totalKey] = 0;
-                        }
-                        totalCounts[totalKey] += parseInt(arr[1]);
-                    }
-                    catCounts[cat] = catTotal;
-
-                    // Get human-readable category name
-                    getCategoryName(cat, catTotal);
-                }
-                loadGraphData();
-                $('.addSeries').bind('click', addSeries)
-                $('.killSeries').bind('click', killSeries)
+                totalData[date] += count;
+                catData[catId]["ts"].push([date, count]);
             }
-        });
-    }
+        }
 
-    var drawAggChart = function(chartData) {
-        $("#loadingMsg").hide();
-        $("#aggregatePlaceholder").height(400)
-        $.plot(
-            $("#aggregatePlaceholder"),
-            chartData,
-            {
-                series: {
-                    lines: { show: true },
-                    points: { show: true }
+        var getCatData = function(catProcessor, callback){
+            var ts_url = getTimeseriesUrl();
+            for (date in totalData){
+                delete totalData[date];
+            }
+            for (catId in catData){
+                delete catData[catId];
+            }
+
+            $.ajax({
+                url: ts_url,
+                success: function(returnedData, httpStatus, xhr){
+                    for (catId in returnedData){
+                        catProcessor(catId, returnedData[catId]);
+                    }
+                    callback();
+
+                }
+            });
+        }
+
+        return {
+            totalData: totalData,
+            catData: catData,
+            catMeta: catMeta,
+            getCategoryMetadata: getCategoryMetadata,
+            getCatData: getCatData,
+            processCatTs: processCatTs,
+            gmtToLocal: gmtToLocal
+        }
+    }());
+
+    var tsGraphing = (function(){
+        var graphedCats = new Array();
+
+        var toggleSeries = function(){
+            var link = $(this);
+            var catId = $(this).attr("id").replace("_link", "")
+            var idx = graphedCats.indexOf(catId);
+
+            if (idx > -1){
+                // Removing a category
+                graphedCats.splice(idx, 1);
+            } else {
+                // Re-displaying a category
+                graphedCats.push(catId);
+            }
+            link.html(idx > -1 ? "+" : "-");
+            $("#tooltip").remove();
+            prepareGraphs();
+            return false;
+
+        }
+
+        var buildLabel = function(catId) {
+            var human_name = tsData.catMeta[catId]["human_name"];
+            var holder = $("<span><a href='#'></a></span>");
+            var link = holder.find("a")
+
+            link.attr("id", catId + "_link");
+            link.text(graphedCats.indexOf(catId) > -1 ? "+" : "-");
+            link.addClass("toggleSeries");
+
+            return tsData.catMeta[catId]["human_name"]+ "&nbsp;" + holder.html();
+        }
+
+        var prepareGraphs = function(){
+            $("#loadingMsg").show();
+            var chartData = new Array();
+
+            for (var catId in tsData.catData){
+                var ts = new Array();
+                if (graphedCats.indexOf(catId) > -1){
+                    ts = tsData.catData[catId]["ts"];
+                }
+                if (tsData.catData[catId]["total"] > tsConfig.filterThreshold){
+                    chartData.push({
+                        label: catId,
+                        data: ts
+                    });
+                }
+            }
+            for (var i = 0; i < graphedCats.length; i++){
+                var catId = graphedCats[i];
+
+            }
+
+            var totalChartData = new Array();
+            for (date in tsData.totalData){
+                totalChartData.push([date, tsData.totalData[date]])
+            }
+
+            totalChartData.sort(function(a,b){ return a[0]-b[0]; });
+            drawAggChart(chartData);
+            drawTotalsChart(totalChartData);
+            writeCatTable();
+            $(".toggleSeries").unbind("click");
+            $(".toggleSeries").bind("click", toggleSeries);
+        }
+
+        var drawAggChart = function(chartData) {
+            $("#loadingMsg").hide();
+            $("#aggregatePlaceholder").height(400)
+            $.plot(
+                $("#aggregatePlaceholder"),
+                chartData,
+                {
+                    series: {
+                        lines: { show: true },
+                        points: { show: true }
+                    },
+                    xaxis: { mode: "time" },
+                    yaxis: { min: 1 },
+                    grid: { hoverable: true, clickable: true },
+                    legend: {
+                        labelFormatter: buildLabel,
+                        container: "#legend",
+                        noColumns: 3
+                    }
+                }
+            );
+        }
+
+        var drawTotalsChart = function(chartData) {
+            $("#loadingMsg").hide();
+            $("#totalsPlaceholder").height(400)
+            $.plot(
+                $("#totalsPlaceholder"),
+                [{label: "Total hits across all categories", data: chartData}],
+                {
+                    series: {
+                        lines: { show: true },
+                        points: { show: true }
+                    },
+                    xaxis: { mode: "time" },
+                    yaxis: { min: 1 },
+                    grid: { hoverable: true, clickable: true },
+                    legend: {
+                        container: "#totalsLegend"
+                    }
+                }
+            );
+        }
+
+        var writeCatTable = function() {
+            for (catId in tsData.catData){
+                if ($("tr#key_"+catId).length === 0){
+                    var rowStr = '<tr class="keyRow" id="key_'+catId+'"></tr>';
+                    $("#keyTable").append(rowStr);
+                }
+                var catName = tsData.catMeta[catId]["human_name"];
+                var catTotal = tsData.catData[catId]["total"];
+
+                var rowContents = [
+                    '<td><a href="/category/'+catId+'/">'+catName+'</a></td>',
+                    '<td>' + catTotal + '</td>'
+                ].join("")
+                $("#key_" + catId).html(rowContents);
+            }
+        }
+
+        var handleConfig = function(){
+            var numericFields = [
+                "reloadEvery", "filterThreshold", "graphMinutes"
+            ];
+            for (var i = 0; i < numericFields.length; i++){
+                var fieldId = numericFields[i];
+                var fieldVal = $("#" + fieldId).val()
+                tsConfig[fieldId] = fieldVal.length > 0 ? parseInt(fieldVal) : 0;
+            }
+            tsConfig["autoReload"] = $('#autoReload').is(':checked') ? true : false;
+            tsConfig["timeSlice"] = $("#timeSlice").val();
+
+            var info = [
+                {
+                    display: tsConfig.autoReload,
+                    fieldId: "reload_status",
+                    msg: "Firetower is reloading every "+tsConfig.reloadEvery+" seconds. It's been <span id='last_reload'></span> seconds since the last reload.",
+                    notMsg: "Firetower is not automatically reloading."
                 },
-                xaxis: { mode: "time" },
-                yaxis: { min: 1 },
-                grid: { hoverable: true, clickable: true },
-                legend: {
-                    labelFormatter: buildLabel,
-                    container: "#legend",
-                    noColumns: 3
-                }
-            }
-        );
-    }
-
-    var drawTotalsChart = function(chartData) {
-        $("#loadingMsg").hide();
-        $("#totalsPlaceholder").height(400)
-        $.plot(
-            $("#totalsPlaceholder"),
-            [{label: "Total hits across all categories", data: chartData}],
-            {
-                series: {
-                    lines: { show: true },
-                    points: { show: true }
+                {
+                    display: tsConfig.filterThreshold > 0,
+                    fieldId: "filterThreshold_status",
+                    msg: "Firetower is filtering out any categories with fewer than "+tsConfig.filterThreshold+" hits.",
+                    notMsg: "Firetower is not filtering out categories."
                 },
-                xaxis: { mode: "time" },
-                yaxis: { min: 1 },
-                grid: { hoverable: true, clickable: true },
-                legend: {
-                    container: "#totalsLegend"
+                {
+                    display: tsConfig.graphMinutes > 0,
+                    fieldId: "graphMinutes_status",
+                    msg: "Firetower is displaying the last "+tsConfig.graphMinutes+" minutes of hits.",
+                    notMsg: "Firetower is displaying all the hits."
+                },
+                {
+                    display: tsConfig.timeSlice.length > 0,
+                    fieldId: "timeSlice_status",
+                    msg: "Firetower is graphing hits in "+tsConfig.timeSlice+" chunks.",
+                    notMsg: "Firetower."
+                }
+
+            ];
+
+            for (var i = 0; i < info.length; i++){
+                var infoObj = info[i];
+                var elem = $("#" + infoObj.fieldId);
+                if (infoObj.display){
+                    elem.html(infoObj.msg);
+                } else {
+                    elem.html(infoObj.notMsg);
                 }
             }
-        );
-    }
+            tsData.getCatData(tsData.processCatTs, tsGraphing.prepareGraphs);
 
-    var getCategoryName = function(catId, catTotal) {
-        var catName = catData[catId].human_name;
-        writeAggKey(catId, catName, catTotal);
-    }
-
-    // Write key for aggregate chart
-    var writeAggKey = function(catId, catName, catTotal) {
-        // Add category name & totals to key
-        if ($("tr#key_"+catId).length === 0){
-            $("#keyTable").append('<tr class="keyRow" id="key_'+catId+'"></tr>');
+            return false;
         }
 
-        $("#key_"+catId).html(
-            [
-                '<td><a href="/category/'+catId+'/?time_slice='+timeSlice+'">'+catName+'</a></td>',
-                '<td>' + catTotal + '</td>'
-            ].join("")
-        );
-    }
+        var initialFormSetup = function() {
+            var simpleIds = [
+                "reloadEvery", "filterThreshold", "graphMinutes", "timeSlice"
+            ];
+            for (var i = 0; i < simpleIds.length; i++){
+                $("#" + simpleIds[i]).val(tsConfig[simpleIds[i]]);
+            }
+            $("#autoReload").prop("checked", tsConfig["autoReload"]);
+            handleConfig();
+        }
 
-    function showTooltip(div_id, x, y, contents) {
+        return {
+            graphedCats: graphedCats,
+            drawTotalsChart: drawTotalsChart,
+            drawAggChart: drawAggChart,
+            prepareGraphs: prepareGraphs,
+            buildLabel: buildLabel,
+            toggleSeries: toggleSeries,
+            writeCatTable: writeCatTable,
+            handleConfig: handleConfig,
+            initialFormSetup: initialFormSetup
+        }
+    }());
+
+    var showTooltip = function(div_id, x, y, contents) {
         $('<div id="'+ div_id +'">' + contents + '</div>').css( {
             position: 'absolute',
             display: 'none',
@@ -262,103 +332,98 @@ var firetower = (function(){
         }).appendTo("body").fadeIn(200);
     }
 
-    var previousPoint = null;
-    $("#aggregatePlaceholder").bind("plothover", function (event, pos, item) {
-        $("#x").text(pos.x.toFixed(2));
-        $("#y").text(pos.y.toFixed(2));
-
-        if (item) {
-            if (previousPoint != item.dataIndex) {
-                previousPoint = item.dataIndex;
-
-                $("#tooltip").remove();
-                var x = item.datapoint[0].toFixed(2),
-                    y = item.datapoint[1].toFixed(2);
-
-                var date = new Date(gmtToLocal(Math.floor(x)));
-                for(var cat in catData){
-                    if (item.series.label == cat){
-                        cat_name = catData[cat]["human_name"];
-                    }
-                }
-                var tooltip_msg = (
-                    "At " + date.toLocaleDateString() +
-                    " " + date.toLocaleTimeString() +
-                    " " + " category " + cat_name  +
-                    " got " + y + " hits"
-                );
-
-                showTooltip(
-                    "tooltip", item.pageX, item.pageY, tooltip_msg
-                );
-            }
-        }
-        else {
-            $("#tooltip").remove();
-            previousPoint = null;
-        }
-    });
-
-    var totalsPreviousPoint = null;
-    $("#totalsPlaceholder").bind("plothover", function (event, pos, item) {
-        $("#totalsX").text(pos.x.toFixed(2));
-        $("#totalsY").text(pos.y.toFixed(2));
-
-        if (item) {
-            if (totalsPreviousPoint != item.dataIndex) {
-                totalsPreviousPoint = item.dataIndex;
-
-                $("#totalsTooltip").remove();
-                var x = item.datapoint[0].toFixed(2),
-                    y = item.datapoint[1].toFixed(2);
-
-                var date = new Date(gmtToLocal(Math.floor(x)));
-                for(var cat in catData){
-                    if (item.series.label == cat){
-                        cat_name = catData[cat]["human_name"];
-                    }
-                }
-                var tooltip_msg = (
-                    "At " + date.toLocaleDateString() +
-                    " " + date.toLocaleTimeString() +
-                    " " + " we had " + y + " errors."
-                );
-
-                showTooltip("totalsTooltip", item.pageX, item.pageY,
-                    tooltip_msg
-                );
-            }
-        }
-        else {
-            $("#totalsTooltip").remove();
-            previousPoint = null;
-        }
-    });
-
-    $("#aggregatePlaceholder").bind("plotclick", function (event, pos, item) {
-        if (item) {
-            window.open('/category/' + item.series.label + "/?time_slice=" + timeSlice)
-        }
-    });
-
     var init = function(){
-        // Get default timeseries data for all categories
-        // & draw chart
-        getAggregateData();
+        $("#aggregatePlaceholder").bind("plotclick", function (event, pos, item) {
+            if (item) {
+                window.open('/category/' + item.series.label + "/?time_slice=" + timeSlice)
+            }
+        });
+
+        $("#aggregatePlaceholder").bind("plothover", function (event, pos, item) {
+            $("#x").text(pos.x.toFixed(2));
+            $("#y").text(pos.y.toFixed(2));
+
+            if (item) {
+                if (previousPoint != item.dataIndex) {
+                    previousPoint = item.dataIndex;
+
+                    $("#tooltip").remove();
+                    var x = item.datapoint[0].toFixed(2),
+                        y = item.datapoint[1].toFixed(2);
+
+                    var date = new Date(tsData.gmtToLocal(Math.floor(x)));
+                    for(var cat in tsData.catData){
+                        if (item.series.label == cat){
+                            cat_name = tsData.catMeta[cat]["human_name"];
+                        }
+                    }
+                    var tooltip_msg = (
+                        "At " + date.toLocaleDateString() +
+                        " " + date.toLocaleTimeString() +
+                        " " + " category " + cat_name  +
+                        " got " + y + " hits"
+                    );
+
+                    showTooltip(
+                        "tooltip", item.pageX, item.pageY, tooltip_msg
+                    );
+                }
+            }
+            else {
+                $("#tooltip").remove();
+                previousPoint = null;
+            }
+        });
 
 
-        $("#filter_threshold").bind("keyup", loadGraphData)
-        $("#last_x_minutes").bind("keyup", getAggregateData)
-        $("#slice_selection").bind("change", getAggregateData)
+        $("#totalsPlaceholder").bind("plothover", function (event, pos, item) {
+            $("#totalsX").text(pos.x.toFixed(2));
+            $("#totalsY").text(pos.y.toFixed(2));
+
+            if (item) {
+                if (totalsPreviousPoint != item.dataIndex) {
+                    totalsPreviousPoint = item.dataIndex;
+
+                    $("#totalsTooltip").remove();
+                    var x = item.datapoint[0].toFixed(2),
+                        y = item.datapoint[1].toFixed(2);
+
+                    var date = new Date(tsData.gmtToLocal(Math.floor(x)));
+                    for(var cat in tsData.catData){
+                        if (item.series.label == cat){
+                            cat_name = catData[cat]["human_name"];
+                        }
+                    }
+                    var tooltip_msg = (
+                        "At " + date.toLocaleDateString() +
+                        " " + date.toLocaleTimeString() +
+                        " " + " we had " + y + " errors."
+                    );
+
+                    showTooltip("totalsTooltip", item.pageX, item.pageY,
+                        tooltip_msg
+                    );
+                }
+            }
+            else {
+                $("#totalsTooltip").remove();
+                previousPoint = null;
+            }
+        });
+
+        tsData.getCategoryMetadata();
+        for (catId in firetower.tsData.catMeta){
+            tsGraphing.graphedCats.push(catId);
+        }
+        tsData.getCatData(tsData.processCatTs, tsGraphing.prepareGraphs);
+        tsGraphing.initialFormSetup();
 
         setInterval(function() {
-            var reload_check = $("#reload_check");
-            if (reload_check.is(':checked')){
-                var reload_input = $("#reload_input");
-                reloadEvery = parseInt(reload_input.val())
-                if (reloadEvery < timeSinceReload){
+            if (tsConfig.autoReload){
+                if (tsConfig.reloadEvery <= timeSinceReload){
                     timeSinceReload = 0;
-                    getAggregateData();
+                    tsData.getCategoryMetadata();
+                    tsData.getCatData(tsData.processCatTs, tsGraphing.prepareGraphs);
                 }
                 else {
                     timeSinceReload += 1;
@@ -371,5 +436,10 @@ var firetower = (function(){
         }, 1000);
     }
 
-    return init;
-}());
+    return {
+        tsData: tsData,
+        tsGraphing: tsGraphing,
+        tsConfig: tsConfig,
+        init: init
+    }
+}();
