@@ -16,7 +16,7 @@ import redis_util
 
 
 TASKS = (
-        'cat_stats',
+        'calc_stats',
         'archive_events',
 )
 
@@ -35,7 +35,7 @@ class Admin(object):
             host=conf.redis_host, port=conf.redis_port, redis_db=conf.redis_db
         )
         self.classifier = classifier.Levenshtein()
-        self.last_archive = None
+        self.last_archive_run = None
 
     # Wrote this to avoid numpy dependencies until we absolutely require them.
     def mean_stdev(self, items):
@@ -72,20 +72,22 @@ class Admin(object):
             cat.mean, cat.stdev = self.mean_stdev(ratios)
 
     def archive_events(self):
-        """Run the timeseries archiving for all categories."""
+        """Run the timeseries archiving for all categories.
+
+        This code moves counts from the atomically incrementable HASHes
+        to Sorted Sets (which can be sliced by date)."""
 
         now = datetime.datetime.utcnow()
-        if self.last_archive is None:
-            self.last_archive = datetime.datetime.utcnow()
+        if self.last_archive_run is None:
+            self.last_archive_run = datetime.datetime.utcnow()
             return
 
         delta = datetime.timedelta(seconds=self.conf.archive_time)
-        if self.last_archive < (now - delta):
+        if self.last_archive_run < (now - delta):
             self.logger.debug('Archiving counts older than %s seconds' % (self.conf.archive_time,))
             for c in category.Category.get_all_categories(self.queue):
                 self.logger.debug('Archiving for %s category' % (c.cat_id))
-                c.timeseries.archive_cat_counts(self.last_archive)
-            self.last_archive = now
+                c.timeseries.archive_cat_counts(self.last_archive_run)
 
 
     def run(self, args):
@@ -96,13 +98,12 @@ class Admin(object):
             if arg not in TASKS:
                 self.logger.error('Specified unknown task: %s' % (arg,))
                 sys.exit(1)
-            if arg == 'cat_stats':
+            if arg == 'calc_stats':
                 self.logger.info('Calculating stats for each category')
                 self.calc_stats()
             if arg == 'archive_events':
                 self.archive_events()
                 self.logger.info('Archiving old data from each category')
-                pass
 
 
 def main():
@@ -112,14 +113,14 @@ def main():
             help='Path to YAML configuration file.')
     parser.add_option(
             '-d', '--delay', action='store', dest='delay',
-            type='int', default=60,
+            type='int', default=1,
             help='Delay between runs of administrative tasks (minutes).')
 
     (options, args) = parser.parse_args()
 
     conf = config.Config(options.conf_path)
     admin = Admin(conf)
-    wait_seconds = options.delay * 60
+    wait_seconds = options.delay
     while 1:
         admin.run(args)
         time.sleep(wait_seconds)

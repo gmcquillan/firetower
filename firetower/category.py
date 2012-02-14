@@ -30,6 +30,10 @@ class TimeSeries(object):
     def __init__(self, redis_conn, cat_id):
         """Create a time series instance for a category
 
+        Args:
+            redis_conn: redis.Redis connection.
+            cat_id: str, identifier for category.
+
         This object exposes the time series data stored in the sorted set
         ts_{cat_id}.
 
@@ -123,7 +127,7 @@ class TimeSeries(object):
         """Move everything before start_time into a Sorted Set.
 
         Args:
-            start_time: int, epoch time.
+            start_time: datetime, utc timezone.
             preserve: boolean, if set will add to existing ts counts rather than
                 over-writing them. Useful when archiving counts that already
                 have entries in the ts set (e.g. backfilling)
@@ -131,6 +135,7 @@ class TimeSeries(object):
         ts_key = 'ts_%s' % (self.cat_id,)
         counter_key = 'counter_%s' % (self.cat_id,)
         check_mark = calendar.timegm(start_time.timetuple())
+        now  = calendar.timegm(time.gmtime())
         counters_to_delete = []
         count_dict = self.redis_conn.hgetall(counter_key)
 
@@ -139,6 +144,8 @@ class TimeSeries(object):
         ]
 
         for ts in interesting_ts:
+            if ts == now:
+                continue
             new_value = count_dict[ts]
             if preserve:
                 existing_entry = self.range(ts, ts)
@@ -234,7 +241,7 @@ class Events(object):
 class Category(object):
     """A class to encapsulate operations involving categories and their metadata
 
-    Currently exposes 3 read/write properties: signature, human_name and
+    Currently exposes 3 read/write properties: signature, human_name, and
     threshold.
 
     """
@@ -247,6 +254,14 @@ class Category(object):
     MEAN_KEY = "mean"
 
     def __init__(self, redis_conn, signature=None, cat_id=None, event=None):
+        """ Init.
+
+        Args:
+            redis_conn: redis.Redis instance.
+            signature: str.
+            cat_id: str, used to fetch existing category if it exists.
+            event: dict, added to existing set of events.
+        """
         self.conn = redis_conn
 
         if signature:
@@ -259,8 +274,8 @@ class Category(object):
         self.timeseries, self.events = None, None
 
         if self.cat_id:
-            self.timeseries = TimeSeries(redis_conn, self.cat_id)
-            self.events = Events(redis_conn, self.cat_id)
+            self.timeseries = TimeSeries(self.conn, self.cat_id)
+            self.events = Events(self.conn, self.cat_id)
 
         if event and self.events:
             self.events.add_event(event)
@@ -296,9 +311,9 @@ class Category(object):
 
         """
         del_keys = (
-            "%s:%s" %(self.cat_id, self.SIGNATURE_KEY),
-            "%s:%s" %(self.cat_id, self.HUMAN_NAME_KEY),
-            "%s:%s" %(self.cat_id, self.THRESHOLD_KEY),
+            "%s:%s" % (self.cat_id, self.SIGNATURE_KEY),
+            "%s:%s" % (self.cat_id, self.HUMAN_NAME_KEY),
+            "%s:%s" % (self.cat_id, self.THRESHOLD_KEY)
         )
 
         for key in del_keys:
@@ -321,8 +336,8 @@ class Category(object):
                 cat.timeseries.archive_cat_counts(archive_time)
 
         self.events.delete()
-        self.conn.delete("counter_%s" %self.cat_id)
-        self.conn.delete("ts_%s" %self.cat_id)
+        self.conn.delete("counter_%s" % self.cat_id)
+        self.conn.delete("ts_%s" % self.cat_id)
 
     @classmethod
     def classify(cls, queue, classifier, error, threshold):
@@ -437,70 +452,25 @@ class Category(object):
     human_name = property(_get_human, _set_human)
 
     def _get_threshold(self):
-        thresh_str = self.conn.hget(
-            self.CAT_META_HASH, "%s:%s" %(self.cat_id, self.THRESHOLD_KEY)
-        )
-        if not thresh_str:
-            return None
-
-        try:
-            thresh = float(thresh_str)
-        except ValueError as e:
-            raise e
-        else:
-            return thresh
+        return self._get_key(self.THRESHOLD_KEY)
 
     def _set_threshold(self, value):
-        return self.conn.hset(
-            self.CAT_META_HASH,
-            "%s:%s" %(self.cat_id, self.THRESHOLD_KEY),
-            value
-        )
+        return self._set_key(self.THRESHOLD_KEY, value)
 
     threshold = property(_get_threshold, _set_threshold)
 
     def _get_stdev(self):
-        mean_str = self.conn.hget(
-            self.CAT_META_HASH, "%s:%s" %(self.cat_id, self.STDEV_KEY)
-        )
-        if not stdev_str:
-            return None
-
-        try:
-            stdev = float(stdev_str)
-        except ValueError as e:
-            raise e
-        else:
-            return stdev
+        return self._get_key(self.STDEV_KEY)
 
     def _set_stdev(self, value):
-        return self.conn.hset(
-            self.CAT_META_HASH,
-            "%s:%s" %(self.cat_id, self.STDEV_KEY),
-            value
-        )
+        return self._set_key(self.STDEV_KEY)
 
     stdev = property(_get_stdev, _set_stdev)
 
     def _get_mean(self):
-        mean_str = self.conn.hget(
-            self.CAT_META_HASH, "%s:%s" %(self.cat_id, self.MEAN_KEY)
-        )
-        if not mean_str:
-            return None
-
-        try:
-            mean = float(mean_str)
-        except ValueError as e:
-            raise e
-        else:
-            return mean
+        return self._get_key(self.MEAN_KEY)
 
     def _set_mean(self, value):
-        return self.conn.hset(
-            self.CAT_META_HASH,
-            "%s:%s" %(self.cat_id, self.MEAN_KEY),
-            value
-        )
+        return self._set_key(self.MEAN_KEY, value)
 
     mean = property(_get_mean, _set_mean)

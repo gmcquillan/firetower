@@ -72,7 +72,6 @@ class LogWatcher(object):
         while 1:
             self.update_files()
             for fid, file in list(self.files_map.iteritems()):
-                print "going to read file %s" % (file,)
                 self.readfile(file)
             if async:
                 return
