@@ -1,400 +1,142 @@
         {% extends "base.html"  %}
-        {% block title %}
-            <h1> Firetower - Errors Across all Categories </h1>
+        {% block head %}
+            <script type="text/javascript" src="/static/js/firetower.js"></script>
+            <script type="text/javascript">
+                $(document).ready(function() {
+                    {% if reload_every %}
+                    firetower.tsConfig.reloadEvery = {{ reload_every }};
+                    {% endif %}
+                    {% if filter_threshold %}
+                    firetower.tsConfig.filterThreshold = {{ filter_threshold }};
+                    {% endif %}
+                    {% if time_slice %}
+                    firetower.tsConfig.timeSlice = {{ time_slice }};
+                    {% endif %}
+                    firetower.init();
+                    $("#graphForm").on("submit", firetower.tsGraphing.handleConfig);
+                });
+            </script>
         {% endblock %}
         {% block content %}
-        <div id="aggregate">
-            <div id="totalsPlaceholder">
-                <div id="loadingMsg">Loading...</div>
-            </div>
-            <div id="totalsLegend"></div>
-            <div id="aggregatePlaceholder">
-                <div id="loadingMsg">Loading...</div>
-            </div>
-            <div id="legend"></div>
-            <div id="key"></div>
-            Graph the last <input type="text" id="last_x_minutes" value="60"/> minutes.<br />
-            Filter out categories with fewer than <input type="text" id="filter_threshold" value="5" /> hits.
-            <div id="reload">
-            Auto reload: <input type="checkbox" id="reload_check" /><br />
-            <div id="set_reload">Reload every <input type="text" id="reload_input" value="60"/> seconds</div>
-            Last updated <span id="last_reload">-</span> seconds ago.<br />
-            <select name="slice" id="slice_selection">
-                {% for element in time_slice_options %}
-                <option value="{{ element }}">{{ element }}</option>
-                {% endfor %}
-            </select>
-            </div>
-        </div>
+            <br>
+            <br>
 
-        <script type="text/javascript">
-            var timeSinceReload = 0;
-            var reloadEvery = 0;
-            // Stores category metadata
-            var catData = new Array();
-            // Categories with counts lower than this won't be graphed
-            var filterThreshold = 0;
-            // array consisting of category_id: category count
-            var catCounts = new Array();
-            // array of timestamp: count for all categories
-            var totalCounts = new Array();
-            {% if time_slice %}
-            var timeSlice = '{{ time_slice }}';
-            {% else %}
-            var timeSlice = "minute";
-            {% endif %}
+            <div class="container">
+                <div class="page-header">
+                    <h1>Aggregate</h1><small>Plots of all categories</small>
+                </div>
 
-            $("#slice_selection").val(timeSlice);
+                <div class="row">
+                    <div class="span12" id="totalsPlaceholder">
+                        &nbsp;
 
-            var timeseriesData = new Array();
-            // Hashmap holding the currently graphed timeseries
-            var graphedData = new Array();
+                        <div id="loadingMsg">
+                            Loading...
+                        </div>
+                    </div>
+                </div>
 
-            var addSeries = function(){
-                toggleSeries($(this), true);
-                return false;
-            }
+                <div class="row">
+                    <div class="span12" id="totalsLegend">
+                        &nbsp;
+                    </div>
+                </div><br>
 
-            var killSeries = function(){
-                toggleSeries($(this), false);
-                return false;
-            }
+                <div class="row">
+                    <div class="span12" id="aggregatePlaceholder">
+                        &nbsp;
 
-            var getCategoryMetadata = function(){
-                $.ajax({
-                    url: "/api/categories/",
-                    async: false,
-                    success: function(jsonData, httpStatus, xhr){
-                        catData = JSON.parse(jsonData);
-                    }
-                });
-            }
+                        <div id="loadingMsg">
+                            Loading...
+                        </div>
+                    </div>
+                </div>
 
-            // Turn a local timestamp into a GMT stamp with the same time string
-            // e.g. 2012 Dec 12 13:00 PST -> 2012 Dec 12 13:00 GMT
-            // This means Flot will give local time on the x-axis
-            var localToGmt = function(ts){
-                var d = new Date(ts);
-                var d1 = new Date(d.getTime() - (d.getTimezoneOffset()*60*1000));
-                return d1.getTime();
-            }
+                <div class="row">
+                    <div class="span12" id="legend">
+                        &nbsp;
+                    </div>
+                </div>
 
-            // Inverse of localToGmt
-            var gmtToLocal = function(ts){
-                var d = new Date(ts);
-                var d1 = new Date(d.getTime() + (d.getTimezoneOffset()*60*1000));
-                return d1.getTime();
-            }
+                <table class="table table-striped" id="keyTable">
+                    <thead>
+                        <tr>
+                            <th>Category Name</th>
 
-            var getTimeseriesUrl = function(){
-                var url_args = "?time_slice=" + timeSlice
-                var last_x_minutes = $("#last_x_minutes").val();
-                if (last_x_minutes.length > 0){
-                    var start = new Date();
-                    start.setMinutes(start.getMinutes() - parseInt(last_x_minutes))
-                    var end = new Date();
-                    url_args = (
-                        url_args +
-                        "&start=" + encodeURIComponent(start.toUTCString()) +
-                        "&end=" + encodeURIComponent(end.toUTCString())
-                    )
-                }
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                </table><br>
 
-                return "/api/categories/timeseries/" + url_args;
-            }
+                <div class="row">
+                    <div class="span12">
+                        <form class="form-horizontal" id="graphForm">
+                            <fieldset>
+                                <legend>Modify the Graphs</legend>
 
-            var toggleSeries = function(link, add){
-                var link_id = link.attr("id");
-                var cat_id = link_id.replace("_link", "")
-                graphedData[cat_id] = add ? timeseriesData[cat_id] : new Array();
-                loadGraphData();
+                                <div class="control-group">
+                                    <label class="control-label" for="timeSlice">Time slice</label>
 
-                for (cat_id in graphedData){
-                    var link_id = "#" + cat_id + "_link";
-                    var new_link = $(link_id);
-                    var visible = graphedData[cat_id].length > 0;
-                    new_link.html(visible ? "-" : "+");
-                    if (!visible){
-                        new_link.attr("class", "addSeries")
-                    }
-                }
+                                    <div class="controls">
+                                        <select class="small" name="slice" id="timeSlice">
+                                            {% for element in time_slice_options %}
+                                            <option value="{{ element }}">{{ element }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <p class="help-block">This sets the granularity of the time axis on the graph.</p>
+                                    </div>
+                                </div>
 
-                $('.addSeries').unbind('click')
-                $('.killSeries').unbind('click')
-                $('.addSeries').bind('click', addSeries)
-                $('.killSeries').bind('click', killSeries)
-                $("#tooltip").remove();
-                return false;
-            }
+                                <div class="control-group">
+                                    <label class="control-label" for="graphMinutes">Minutes to graph</label>
 
-            var buildLabel = function(label, series) {
-                var link = "";
-                if (graphedData[label].length > 0){
-                    link = "<a id='" + label + "_link' class='killSeries' href='#'>-</a>"
-                }
-                else {
-                    link = "<a id='" + label + "_link' class='addSeries' href='#'>+</a>"
-                }
-                var human_name = catData[label]["human_name"];
-                return human_name + "&nbsp;" + link;
-            }
+                                    <div class="controls">
+                                        <input type="text" class="input-xlarge" id="graphMinutes">
 
-            var loadGraphData = function(){
-                var filterThresholdStr = $("#filter_threshold").val();
-                if (filterThresholdStr.length === 0){
-                    filterThresholdStr = "0";
-                }
-                filterThreshold = parseInt(filterThresholdStr);
+                                        <p class="help-block">This will cause the graph to only display the last x minutes of hits.</p>
+                                    </div>
+                                </div>
 
-                // Empty array to hold chart data
-                var chartData = new Array();
-                for (cat in graphedData) {
-                    // Store category name & data for chart
-                    if (catCounts[cat] > filterThreshold){
-                        chartData.push(
-                            { label: cat, data: graphedData[cat] }
-                        )
-                    }
-                }
-                var totalChartData = new Array();
-                for (ts in totalCounts){
-                    totalChartData.push([parseInt(ts), totalCounts[ts]])
-                }
-                totalChartData.sort(function(a,b){ return a[0]-b[0]; });
+                                <div class="control-group">
+                                    <label class="control-label" for="filterThreshold">Filter threshold</label>
 
-                drawAggChart(chartData);
-                drawTotalsChart(totalChartData);
-            }
+                                    <div class="controls">
+                                        <input type="text" class="input-xlarge" id="filterThreshold">
 
-            var getAggregateData = function() {
-                $("#loadingMsg").show();
-                getCategoryMetadata();
-                timeSlice = $("#slice_selection").val();
+                                        <p class="help-block">Any category with fewer than x hits will not be graphed.</p>
+                                    </div>
+                                </div>
 
-                // Clear out the current key
-                $("#key").html("");
+                                <div class="control-group">
+                                    <label class="control-label" for="reloadEvery">Time between reloads</label>
 
-                var handler = $.ajax({
-                    url: getTimeseriesUrl(),
-                    success: function(returnedData, httpStatus, xhr){
-                        timeseriesData = JSON.parse(returnedData);
-                        totalCounts = new Array();
-                        catCounts = new Array();
+                                    <div class="controls">
+                                        <input type="text" class="input-xlarge" id="reloadEvery">
 
-                        for (cat in timeseriesData){
-                            var temp = new Array();
-                            for (var i=0; i < timeseriesData[cat].length; i++){
-                                var entry = timeseriesData[cat][i];
-                                temp.push([localToGmt(entry[0]), entry[1]])
-                            }
-                            timeseriesData[cat] = temp;
-                        }
+                                        <p class="help-block">If the graph is set to auto reload this is the time in seconds between those reloads.</p>
+                                    </div>
+                                </div>
 
-                        for (cat in timeseriesData) {
-                            if (!(cat in graphedData) || graphedData[cat].length > 0){
-                                graphedData[cat] = timeseriesData[cat];
-                            }
+                                <div class="control-group">
+                                    <label class="control-label" for="autoReload">Auto-Reload</label>
 
-                            // Sum total instances per category
-                            var catTotal = 0;
-                            for (var i=0, arr; arr=timeseriesData[cat][i]; i++) {
-                                catTotal += arr[1];
-                                var totalKey = arr[0].toString()
-                                if (!(totalKey in totalCounts)){
-                                    totalCounts[totalKey] = 0;
-                                }
-                                totalCounts[totalKey] += parseInt(arr[1]);
-                            }
-                            catCounts[cat] = catTotal;
+                                    <div class="controls">
+                                        <label class="checkbox"><input type="checkbox" id="autoReload"> If this is set the graph will automatically download the lastest category information.</label>
+                                    </div>
+                                </div>
 
-                            // Get human-readable category name
-                            getCategoryName(cat, catTotal);
-                        }
-                        loadGraphData();
-                        $('.addSeries').bind('click', addSeries)
-                        $('.killSeries').bind('click', killSeries)
-                    }
-                });
-            }
-
-            var drawAggChart = function(chartData) {
-                $("#loadingMsg").hide();
-                $.plot(
-                    $("#aggregatePlaceholder"),
-                    chartData,
-                    {
-                        series: {
-                            lines: { show: true },
-                            points: { show: true }
-                        },
-                        xaxis: { mode: "time" },
-                        yaxis: { min: 1 },
-                        grid: { hoverable: true, clickable: true },
-                        legend: {
-                            labelFormatter: buildLabel,
-                            container: "#legend",
-                            noColumns: 3
-                        }
-                    }
-                );
-            }
-
-            var drawTotalsChart = function(chartData) {
-                $("#loadingMsg").hide();
-                $.plot(
-                    $("#totalsPlaceholder"),
-                    [{label: "Total hits across all categories", data: chartData}],
-                    {
-                        series: {
-                            lines: { show: true },
-                            points: { show: true }
-                        },
-                        xaxis: { mode: "time" },
-                        yaxis: { min: 1 },
-                        grid: { hoverable: true, clickable: true },
-                        legend: {
-                            container: "#totalsLegend",
-                        }
-                    }
-                );
-            }
-
-            var getCategoryName = function(catId, catTotal) {
-                var catName = catData[catId].human_name;
-                writeAggKey(catId, catName, catTotal);
-            }
-
-            // Write key for aggregate chart
-            var writeAggKey = function(catId, catName, catTotal) {
-                // Add category name & totals to key
-                if ($("#"+catId).length === 0){
-                    $("#key").append(
-                        '<div class="keyEntry" id="'+catId+'"></div>')
-                }
-
-                $("#"+catId).html('<div class="catTotal"><h1>'+catTotal+'</h1></div><div class="catName"><a href="/category/'+catId+'/?time_slice='+timeSlice+'">'+catName+'</a></div>')
-            }
-
-            function showTooltip(div_id, x, y, contents) {
-                $('<div id="'+ div_id +'">' + contents + '</div>').css( {
-                    position: 'absolute',
-                    display: 'none',
-                    top: y + 5,
-                    left: x + 5,
-                    border: '1px solid #fdd',
-                    padding: '2px',
-                    'background-color': '#fee',
-                    opacity: 0.80
-                }).appendTo("body").fadeIn(200);
-            }
-
-            var previousPoint = null;
-            $("#aggregatePlaceholder").bind("plothover", function (event, pos, item) {
-                $("#x").text(pos.x.toFixed(2));
-                $("#y").text(pos.y.toFixed(2));
-
-                if (item) {
-                    if (previousPoint != item.dataIndex) {
-                        previousPoint = item.dataIndex;
-
-                        $("#tooltip").remove();
-                        var x = item.datapoint[0].toFixed(2),
-                            y = item.datapoint[1].toFixed(2);
-
-                        var date = new Date(gmtToLocal(Math.floor(x)));
-                        for(var cat in catData){
-                            if (item.series.label == cat){
-                                cat_name = catData[cat]["human_name"];
-                            }
-                        }
-                        var tooltip_msg = (
-                            "At " + date.toLocaleDateString() +
-                            " " + date.toLocaleTimeString() +
-                            " " + " category " + cat_name  +
-                            " got " + y + " hits"
-                        );
-
-                        showTooltip(
-                            "tooltip", item.pageX, item.pageY, tooltip_msg
-                        );
-                    }
-                }
-                else {
-                    $("#tooltip").remove();
-                    previousPoint = null;
-                }
-            });
-
-            var totalsPreviousPoint = null;
-            $("#totalsPlaceholder").bind("plothover", function (event, pos, item) {
-                $("#totalsX").text(pos.x.toFixed(2));
-                $("#totalsY").text(pos.y.toFixed(2));
-
-                if (item) {
-                    if (totalsPreviousPoint != item.dataIndex) {
-                        totalsPreviousPoint = item.dataIndex;
-
-                        $("#totalsTooltip").remove();
-                        var x = item.datapoint[0].toFixed(2),
-                            y = item.datapoint[1].toFixed(2);
-
-                        var date = new Date(gmtToLocal(Math.floor(x)));
-                        for(var cat in catData){
-                            if (item.series.label == cat){
-                                cat_name = catData[cat]["human_name"];
-                            }
-                        }
-                        var tooltip_msg = (
-                            "At " + date.toLocaleDateString() +
-                            " " + date.toLocaleTimeString() +
-                            " " + " we had " + y + " errors."
-                        );
-
-                        showTooltip("totalsTooltip", item.pageX, item.pageY,
-                            tooltip_msg
-                        );
-                    }
-                }
-                else {
-                    $("#totalsTooltip").remove();
-                    previousPoint = null;
-                }
-            });
-
-            $("#aggregatePlaceholder").bind("plotclick", function (event, pos, item) {
-                if (item) {
-                    window.open('/category/' + item.series.label + "/?time_slice=" + timeSlice)
-                }
-            });
-
-            $(function () {
-                // Get default timeseries data for all categories
-                // & draw chart
-                getAggregateData();
-            });
-
-            $("#filter_threshold").bind("keyup", loadGraphData)
-            $("#last_x_minutes").bind("keyup", getAggregateData)
-            $("#slice_selection").bind("change", getAggregateData)
-
-            setInterval(function() {
-                var reload_check = $("#reload_check");
-                if (reload_check.is(':checked')){
-                    var reload_input = $("#reload_input");
-                    reloadEvery = parseInt(reload_input.val())
-                    if (reloadEvery < timeSinceReload){
-                        timeSinceReload = 0;
-                        getAggregateData();
-                    }
-                    else {
-                        timeSinceReload += 1;
-                        $("#last_reload").html(timeSinceReload);
-                    }
-                }
-                else{
-                    $("#last_reload").html("-");
-                }
-            }, 1000);
-
-        </script>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Make it so</button>
+                                </div>
+                            </fieldset>
+                        </form>
+                        <ul>
+                            <li id="reload_status"></li>
+                            <li id="filterThreshold_status"></li>
+                            <li id="graphMinutes_status"></li>
+                            <li id="timeSlice_status"></li>
+                        </ul>
+                    </div>
+                </div><!-- end row -->
+            </div><!-- end of container -->
         {% endblock %}
