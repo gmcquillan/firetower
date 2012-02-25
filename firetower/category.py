@@ -1,7 +1,7 @@
 import calendar
 from collections import namedtuple
 import hashlib
-import simplejson as json
+import json
 import time
 
 from logbook import Logger

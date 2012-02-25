@@ -1,4 +1,4 @@
-import simplejson as json
+import json
 
 from logbook import Logger
 from logbook import TimedRotatingFileHandler
@@ -42,8 +42,12 @@ class Client(object):
             if not unencoded.get("sig", None):
                 raise ValueError
         except ValueError:
-            payload = {"sig": event}
-            event = json.dumps(payload)
+            if len(event) > 0:
+                payload = {"sig": event}
+                event = json.dumps(payload)
+            else:
+                log.debug("event was empty")
+                pass
 
         self.push_event(event)
         log.debug("Pushed event %s to firetower" % (event,))
