@@ -57,6 +57,32 @@ def cat_route():
     return flask.jsonify(ret)
 
 
+@app.route("/api/category/<cat_id>", methods=["POST"])
+def cat_update():
+    """Update data about an existing category.
+    
+    Updatable fields include: signature, threshold, human name.
+    """
+
+    sig = request.form.get("sig", None)
+    # You cannot delete the signature.
+    if not sig:
+        abort(500)
+    thresh = request.form.get("thresh", None)
+    human = request.form.get("human", None)
+    conn = REDIS.conn
+    cat = category.Category(conn, cat_id=cat_id)
+    if cat.signature is not sig:
+        cat.signature = sig
+    if thresh and cat.threshold is not thresh:
+        cat._set_threshold(thresh)
+    if human and cat.human is not human:
+        cat._set_human(human)
+
+    return flask.jsonify(new_cat.to_dict())
+
+
+
 @app.route("/api/category/new/", methods=["POST"])
 def cat_new():
     """For creating new signature categories manually."""
@@ -74,6 +100,20 @@ def cat_new():
         new_cat._set_human(human)
 
     return flask.jsonify(new_cat.to_dict())
+
+
+@app.route("/api/category/recategorize/<cat_id>/", methods=["POST"])
+def cat_recategorize():
+    """For recategorizing an existing category."""
+
+    # Let's be certain we want to do this.
+    if not request.form.get("certain"):
+        abort(400)
+    if not cat_id:
+        abort(400)
+    thresh = request.form.get("thresh", 0.5)
+    cat = category.Category(cat_id=cat_id)
+    cat.recategorise(thresh)
 
 
 def base_timeseries(cat_id=None):
