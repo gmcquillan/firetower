@@ -15,7 +15,11 @@
             Last updated <span id="last_reload">-</span> seconds ago.<br />
             <a href="/aggregate">Back to aggregate page</a>
             </div>
-            {{ cat_id }}
+            <h2>Category ID: {{cat_id}}</h2>
+            <h3> Human Name: {{human_name}}</h3>
+            <h3>Threshold: {{threshold}}</h3>
+            <h3>Mean Match: {{mean}}</h3>
+            <h3>Standard Deviation: {{stdev}}</h3>
             <h3>Category Signature</h3>
             <pre>{{ signature }}</pre>
             <div id="events">
