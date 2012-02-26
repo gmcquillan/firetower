@@ -11,7 +11,9 @@ import client
 
 
 FAKE_SIGS = [
-'Test Exception', 'Another Random Error', 'Banannas', 'ToastToast'
+    "dfljk3kljljksdjviaaoTEST1ljsdkljdsaslkjdsklj",
+    "39jsad vijqerp8 hvasdvasdvTEST2JVIEJ9giaj93aerg",
+    "ja394jasdlkvj 3jslajfbTEST3 IJVJ#W(JGSG)"
 ]
 
 FAKE_DATA = {'hostname': 'testmachine',

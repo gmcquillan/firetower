@@ -23,7 +23,9 @@ class Main(object):
         self.queue = redis_util.get_redis_conn(
             host=conf.redis_host, port=conf.redis_port, redis_db=conf.redis_db
         )
-        self.classifier = classifier.Levenshtein()
+        self.classifiers = []
+        for classifier_name in conf.class_order:
+            self.classifiers.append(getattr(classifier, classifier_name)())
         self.last_archive = None
 
     def get_error(self):
@@ -37,7 +39,7 @@ class Main(object):
             if err:
                 parsed = json.loads(err)
                 category.Category.classify(
-                    self.queue, self.classifier, parsed, self.conf.class_thresh
+                    self.queue, self.classifiers, parsed, self.conf.class_thresh
                 )
             else:
                 time.sleep(1)

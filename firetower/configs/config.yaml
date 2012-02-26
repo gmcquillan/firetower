@@ -10,6 +10,13 @@ redis_db: 1
 # Queue source for classification
 queue_key: incoming
 
+# Order that classifiers are run in
+class_order:
+    - Regex
+    - Levenshtein
+
+# Default threshold for the Levenshtein classifier
+
 class_thresh: 0.5
 
 # Time Between Alert Checks
@@ -31,5 +38,5 @@ archive_time: 2
 log_file: firetower-server.log
 log_level: 0
 
-imap_user: niall
-imap_host: mail.prod.urbanairship.com
+imap_user: 
+imap_host: 
