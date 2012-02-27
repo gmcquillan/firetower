@@ -130,14 +130,14 @@ var firetower = function() {
         var catData = {};
         var catMeta = {};
 
-        var getCategoryMetadata = function(){
+        var getCategoryMetadata = function(callback){
             $.ajax({
                 url: "/api/categories/",
-                async: false,
                 success: function(jsonData, httpStatus, xhr){
                     for (catId in jsonData){
                         catMeta[catId] = jsonData[catId];
                     }
+                    callback();
                 }
             });
         }
@@ -378,21 +378,18 @@ var firetower = function() {
         }).appendTo("body").fadeIn(200);
     }
 
-    var refreshGraphs = function(){
+    var callbackRefreshGraphs = function(){
         tsConfigManagement.getConfigFromHash();
         tsConfigManagement.refreshInfo();
-        tsData.getCategoryMetadata();
         tsData.getCatData(tsData.processCatTs, tsGraphing.prepareGraphs);
     }
 
-    var init = function(){
-        $("#aggregatePlaceholder").bind("plotclick", function (event, pos, item) {
-            if (item) {
-                window.open('/category/' + item.series.label + "/?time_slice=" + timeSlice)
-            }
-        });
+    var refreshGraphs = function(){
+        tsData.getCategoryMetadata(callbackRefreshGraphs);
+    }
 
-        $("#aggregatePlaceholder").bind("plothover", function (event, pos, item) {
+    var hoverFunct = function(buildTooltip){
+        var ret = function (event, pos, item) {
             $("#x").text(pos.x.toFixed(2));
             $("#y").text(pos.y.toFixed(2));
 
@@ -405,20 +402,12 @@ var firetower = function() {
                         y = item.datapoint[1].toFixed(2);
 
                     var date = new Date(tsData.gmtToLocal(Math.floor(x)));
-                    for(var cat in tsData.catData){
-                        if (item.series.label == cat){
-                            cat_name = tsData.catMeta[cat]["human_name"];
-                        }
-                    }
-                    var tooltip_msg = (
-                        "At " + date.toLocaleDateString() +
-                        " " + date.toLocaleTimeString() +
-                        " " + " category " + cat_name  +
-                        " got " + y + " hits"
-                    );
+                    var tooltipMsg = buildTooltip(
+                        item.series.label, y, date
+                    )
 
                     showTooltip(
-                        "tooltip", item.pageX, item.pageY, tooltip_msg
+                        "tooltip", item.pageX, item.pageY, tooltipMsg
                     );
                 }
             }
@@ -426,45 +415,47 @@ var firetower = function() {
                 $("#tooltip").remove();
                 previousPoint = null;
             }
-        });
+        }
+        return ret;
+    }
 
-
-        $("#totalsPlaceholder").bind("plothover", function (event, pos, item) {
-            $("#totalsX").text(pos.x.toFixed(2));
-            $("#totalsY").text(pos.y.toFixed(2));
-
+    var callbackInit = function(){
+        $("#aggregatePlaceholder").bind("plotclick", function (event, pos, item) {
             if (item) {
-                if (totalsPreviousPoint != item.dataIndex) {
-                    totalsPreviousPoint = item.dataIndex;
-
-                    $("#totalsTooltip").remove();
-                    var x = item.datapoint[0].toFixed(2),
-                        y = item.datapoint[1].toFixed(2);
-
-                    var date = new Date(tsData.gmtToLocal(Math.floor(x)));
-                    for(var cat in tsData.catData){
-                        if (item.series.label == cat){
-                            cat_name = catData[cat]["human_name"];
-                        }
-                    }
-                    var tooltip_msg = (
-                        "At " + date.toLocaleDateString() +
-                        " " + date.toLocaleTimeString() +
-                        " " + " we had " + y + " errors."
-                    );
-
-                    showTooltip("totalsTooltip", item.pageX, item.pageY,
-                        tooltip_msg
-                    );
-                }
-            }
-            else {
-                $("#totalsTooltip").remove();
-                previousPoint = null;
+                window.open('/category/' + item.series.label + "/?time_slice=" + timeSlice)
             }
         });
 
-        tsData.getCategoryMetadata();
+        $("#aggregatePlaceholder").bind(
+            "plothover",
+            hoverFunct(function(label, hits, date){
+                for(var cat in tsData.catData){
+                    if (label == cat){
+                        cat_name = tsData.catMeta[cat]["human_name"];
+                    }
+                }
+                return (
+                    "At " + date.toLocaleDateString() +
+                    " " + date.toLocaleTimeString() +
+                    " " + " category " + cat_name  +
+                    " got " + hits + " hits"
+                );
+
+            })
+        );
+
+        $("#totalsPlaceholder").bind(
+            "plothover",
+            hoverFunct(function(label, hits, date){
+                return (
+                    "At " + date.toLocaleDateString() +
+                    " " + date.toLocaleTimeString() +
+                    " " + " we had " + hits + " errors."
+                );
+
+            })
+        );
+
         for (catId in firetower.tsData.catMeta){
             tsGraphing.graphedCats.push(catId);
         }
@@ -485,6 +476,10 @@ var firetower = function() {
                 $("#last_reload").html("-");
             }
         }, 1000);
+    }
+
+    var init = function(){
+        tsData.getCategoryMetadata(callbackInit);
     }
 
     return {
