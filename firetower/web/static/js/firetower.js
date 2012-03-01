@@ -132,7 +132,7 @@ var firetower = function() {
 
         var getCategoryMetadata = function(){
             $.ajax({
-                url: "/api/categories/",
+                url: "/categories/",
                 async: false,
                 success: function(jsonData, httpStatus, xhr){
                     for (catId in jsonData){
@@ -171,7 +171,7 @@ var firetower = function() {
                 )
             }
 
-            return "/api/categories/timeseries/" + url_args;
+            return "/categories/timeseries/" + url_args;
         }
 
         var processCatTs = function(catId, tsList){

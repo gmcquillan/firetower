@@ -1,6 +1,6 @@
         {% extends "base.html"  %}
         {% block title %}
-            <h1> Firetower - Total Errors per Category </h1>
+        <h1> Firetower - Total Errors for {{ human_name }} </h1>
         {% endblock %}
         {% block content %}
         <div id="aggregate">
@@ -15,20 +15,54 @@
             Last updated <span id="last_reload">-</span> seconds ago.<br />
             <a href="/aggregate">Back to aggregate page</a>
             </div>
-            <h2>Category ID: {{cat_id}}</h2>
-            <h3> Human Name: {{human_name}}</h3>
-            <h3>Threshold: {{threshold}}</h3>
-            <h3>Mean Match: {{mean}}</h3>
-            <h3>Standard Deviation: {{stdev}}</h3>
+            <h2>Category ID: {{ cat_id }}</h2>
+            <h3> Human Name: {{ human_name }}</h3>
+            <h3>Threshold: {{ threshold }}</h3>
+            <h3>Mean Match: {{ mean }}</h3>
+            <h3>Standard Deviation: {{ stdev }}</h3>
             <h3>Category Signature</h3>
             <pre>{{ signature }}</pre>
             <div id="events">
                 <h3>Recent Events Categorized:</h3>
                 <ul>
                 {% for event in recent_signatures %}
-                    <li><pre>{{event}}</pre></li>
+                    <li><pre>{{ event }}</pre></li>
                 {% endfor %}
                 </ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="span12">
+                <form class="form-horizontal" name="categoryForm" action="" method="post">
+                    <fieldset>
+                        <legend>Modify Category Meta Data</legend>
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="control-label" for="humanName">Human Name</label>
+                                <input type="text" class="input-xlarge" id="humanName" name="humanName" placeholder="{{ human_name }}">
+                                <p class="help-block">Edit/create a readable form of this category. This is what will show up in tables and legends.</p>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="control-label" for="categoryThreshold">Threshold</label>
+                                <input type="test" class="input-xsmall" id="categoryThreshold" name="categoryThreshold" placeholder="{{ threshold }}">
+                                <p class="help-block">Change the threshold (e.g. 0.5 is the default; 1.0 is 100% match).</p>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="control-label" for="textarea">Signature</label>
+                                <textarea class="input-xlarge" id="textarea" name="categorySignature" placeholder="{{ signature }}"></textarea>
+                            </div> 
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Make it so</button>
+                        </div>
+                    </fieldset>
+                </form>
             </div>
         </div>
 
@@ -42,9 +76,9 @@
                 $("#loadingMsg").show();
                 var handler = $.ajax({
                     {% if time_slice %}
-                    url: "/api/categories/{{ cat_id }}/timeseries/?time_slice={{ time_slice }}",
+                    url: "/categories/{{ cat_id }}/timeseries/?time_slice={{ time_slice }}",
                     {% else %}
-                    url: "/api/categories/{{ cat_id }}/timeseries",
+                    url: "/categories/{{ cat_id }}/timeseries",
                     {% endif %}
                     success: function(returnedData, httpStatus, xhr){
                         var timeSeriesData = JSON.parse(returnedData);
@@ -128,7 +162,7 @@
                         var catData = "";
                         $.ajax({
                             async: false,
-                            url: "/api/categories/",
+                            url: "/categories/",
                             success: function(jsonData, httpStatus, xhr){
                                 catData = JSON.parse(jsonData);
                             }
