@@ -252,6 +252,12 @@ class Category(object):
     THRESHOLD_KEY = "threshold"
     STDEV_KEY = "stdev"
     MEAN_KEY = "mean"
+    RE_KEY = "regex"
+
+    keys = [
+        CAT_META_HASH, SIGNATURE_KEY, HUMAN_NAME_KEY, THRESHOLD_KEY,
+        STDEV_KEY, MEAN_KEY, RE_KEY
+    ]
 
     def __init__(self, redis_conn, signature=None, cat_id=None, event=None):
         """ Init.
@@ -310,14 +316,9 @@ class Category(object):
                 back.
 
         """
-        del_keys = (
-            "%s:%s" % (self.cat_id, self.SIGNATURE_KEY),
-            "%s:%s" % (self.cat_id, self.HUMAN_NAME_KEY),
-            "%s:%s" % (self.cat_id, self.THRESHOLD_KEY)
-        )
 
-        for key in del_keys:
-            self.conn.hdel(self.CAT_META_HASH, key)
+        for key in self.keys:
+            self.conn.hdel(self.CAT_META_HASH, "%s:%s" % (self.cat_id, key))
 
         comp = classifier.Levenshtein()
 
@@ -340,7 +341,7 @@ class Category(object):
         self.conn.delete("ts_%s" % self.cat_id)
 
     @classmethod
-    def classify(cls, queue, classifier, error, threshold):
+    def classify(cls, queue, classifiers, error, threshold):
         """Determine which category, if any, a signature belongs to.
 
         If it doesn't find a match, then it'll save the error into a new
@@ -353,10 +354,15 @@ class Category(object):
         categories = cls.get_all_categories(queue)
         matched_cat = None
         start = time.time()
-        for cat in categories:
-            if classifier.check_message(cat, error, threshold):
-                cat.events.add_event(error)
-                matched_cat = cat
+        for classifier in classifiers:
+            matched = False
+            for cat in categories:
+                if classifier.check_message(cat, error, threshold):
+                    cat.events.add_event(error)
+                    matched_cat = cat
+                    matched = True
+                    break
+            if matched:
                 break
         else:
             cat_sig = error['sig']
@@ -427,12 +433,12 @@ class Category(object):
 
     def _get_key(self, key):
         return self.conn.hget(
-            self.CAT_META_HASH, "%s:%s" %(self.cat_id, key)
+            self.CAT_META_HASH, "%s:%s" % (self.cat_id, key)
         )
 
     def _set_key(self, key, value):
         return self.conn.hset(
-            self.CAT_META_HASH, "%s:%s" %(self.cat_id, key), value
+            self.CAT_META_HASH, "%s:%s" % (self.cat_id, key), value
         )
 
     def _get_signature(self):
@@ -474,3 +480,11 @@ class Category(object):
         return self._set_key(self.MEAN_KEY, value)
 
     mean = property(_get_mean, _set_mean)
+
+    def _get_regex(self):
+        return self._get_key(self.RE_KEY)
+
+    def _set_regex(self, value):
+        return self._set_key(self.RE_KEY, value)
+
+    regex = property(_get_regex, _set_regex)

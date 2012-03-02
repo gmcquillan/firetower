@@ -19,11 +19,12 @@ class Config(object):
 
     def __init__(self, conf_path):
         self.conf_path = conf_path
-        self.redis_host, self.redis_port, self.redis_db, self.queue_key, \
-        self.alert_time, self.class_thresh, self.timeslices, \
-        self.archive_time, self.log_file, self.log_level, \
-        self.imap_user, self.imap_host = \
-                self.load_conf(file(self.conf_path, 'r'))
+        (
+            self.redis_host, self.redis_port, self.redis_db, self.queue_key,
+            self.alert_time, self.class_thresh, self.timeslices,
+            self.archive_time, self.log_file, self.log_level,
+            self.imap_user, self.imap_host, self.class_order,
+        ) = self.load_conf(file(self.conf_path, 'r'))
 
     def load_conf(self, conf_str):
         """Convert string version of configuration to python datastructures.
@@ -71,7 +72,8 @@ class Config(object):
         log_level = conf_dict.get('log_level', 1)
         imap_user = conf_dict.get('imap_user', '')
         imap_host = conf_dict.get('imap_host', '')
+        class_order = conf_dict.get('class_order', '')
 
         return (redis_host, redis_port, redis_db, queue_key, alert_time,
                 class_thresh, timeslices, archive_time, log_file, log_level,
-                imap_user, imap_host)
+                imap_user, imap_host, class_order)

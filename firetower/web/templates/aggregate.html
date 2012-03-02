@@ -3,17 +3,14 @@
             <script type="text/javascript" src="/static/js/firetower.js"></script>
             <script type="text/javascript">
                 $(document).ready(function() {
-                    {% if reload_every %}
-                    firetower.tsConfig.reloadEvery = {{ reload_every }};
-                    {% endif %}
-                    {% if filter_threshold %}
-                    firetower.tsConfig.filterThreshold = {{ filter_threshold }};
-                    {% endif %}
-                    {% if time_slice %}
-                    firetower.tsConfig.timeSlice = {{ time_slice }};
-                    {% endif %}
+                    hashtrack.init();
                     firetower.init();
-                    $("#graphForm").on("submit", firetower.tsGraphing.handleConfig);
+
+                    firetower.tsConfigManagement.init();
+                    hashtrack.onhashchange(firetower.refreshGraphs, true)
+                    $("#graphForm").on(
+                        "submit", firetower.tsConfigManagement.formToHash
+                    );
                 });
             </script>
         {% endblock %}

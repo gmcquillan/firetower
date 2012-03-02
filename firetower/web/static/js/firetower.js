@@ -12,6 +12,119 @@ var firetower = function() {
         graphMinutes: 0
     }
 
+    var tsConfigManagement = (function(){
+        var initialFormSetup = function() {
+            var simpleIds = [
+                "reloadEvery", "filterThreshold", "graphMinutes", "timeSlice"
+            ];
+            for (var i = 0; i < simpleIds.length; i++){
+                $("#" + simpleIds[i]).val(tsConfig[simpleIds[i]]);
+            }
+            $("#autoReload").prop("checked", tsConfig["autoReload"]);
+        }
+
+        var refreshInfo = function(){
+            var info = [
+                {
+                    display: tsConfig.autoReload,
+                    fieldId: "reload_status",
+                    msg: [
+                            "Firetower is reloading every "+tsConfig.reloadEvery,
+                            " seconds. It's been <span id='last_reload'></span>",
+                            " seconds since the last reload."
+                    ].join(""),
+                    notMsg: "Firetower is not automatically reloading."
+                },
+                {
+                    display: tsConfig.filterThreshold > 0,
+                    fieldId: "filterThreshold_status",
+                    msg: [
+                            "Firetower is filtering out any categories ",
+                            "with fewer than "+tsConfig.filterThreshold+" hits."
+                    ].join(""),
+                    notMsg: "Firetower is not filtering out categories."
+                },
+                {
+                    display: tsConfig.graphMinutes > 0,
+                    fieldId: "graphMinutes_status",
+                    msg: "Firetower is displaying the last "+tsConfig.graphMinutes+" minutes of hits.",
+                    notMsg: "Firetower is displaying all the hits."
+                },
+                {
+                    display: tsConfig.timeSlice.length > 0,
+                    fieldId: "timeSlice_status",
+                    msg: "Firetower is graphing hits in "+tsConfig.timeSlice+" chunks.",
+                    notMsg: "Firetower."
+                }
+
+            ];
+
+            for (var i = 0; i < info.length; i++){
+                var infoObj = info[i];
+                var elem = $("#" + infoObj.fieldId);
+                if (infoObj.display){
+                    elem.html(infoObj.msg);
+                } else {
+                    elem.html(infoObj.notMsg);
+                }
+            }
+
+        }
+
+        var formToHash = function(){
+            var numericFields = [
+                "reloadEvery", "filterThreshold", "graphMinutes"
+            ];
+            for (var i = 0; i < numericFields.length; i++){
+                var fieldId = numericFields[i];
+                var fieldVal = $("#" + fieldId).val()
+                var fieldInt = fieldVal.length > 0 ? parseInt(fieldVal) : 0
+                hashtrack.setVar(
+                    fieldId,
+                    // hashtrack doesn't like putting 0's into the location...
+                    fieldInt > 0 ? fieldInt : "-"
+                );
+            }
+            hashtrack.setVar(
+                "autoReload",
+                $('#autoReload').is(':checked') ? "yes" : "no"
+            );
+            hashtrack.setVar("timeSlice", $("#timeSlice").val());
+            return false
+
+        }
+
+        var getConfigFromHash = function(){
+            var hashVars = hashtrack.getAllVars();
+            var fixHashTrackCrazy = {
+                "-": 0,
+                "no": false,
+                "yes": true
+            }
+            for (var varName in hashVars){
+                var configValue = hashVars[varName];
+                if (configValue in fixHashTrackCrazy){
+                    configValue = fixHashTrackCrazy[configValue];
+                }
+                tsConfig[varName] = configValue;
+            }
+        }
+
+        var init = function(){
+            getConfigFromHash();
+            initialFormSetup();
+            refreshInfo();
+        }
+
+        return {
+            getConfigFromHash: getConfigFromHash,
+            formToHash: formToHash,
+            refreshInfo: refreshInfo,
+            init: init
+        }
+
+    }());
+
     var tsData = (function(){
         var totalData = {};
         var catData = {};
@@ -19,7 +132,7 @@ var firetower = function() {
 
         var getCategoryMetadata = function(){
             $.ajax({
-                url: "/api/categories/",
+                url: "/categories/",
                 async: false,
                 success: function(jsonData, httpStatus, xhr){
                     for (catId in jsonData){
@@ -58,7 +171,7 @@ var firetower = function() {
                 )
             }
 
-            return "/api/categories/timeseries/" + url_args;
+            return "/categories/timeseries/" + url_args;
         }
 
         var processCatTs = function(catId, tsList){
@@ -241,71 +354,6 @@ var firetower = function() {
             }
         }
 
-        var handleConfig = function(){
-            var numericFields = [
-                "reloadEvery", "filterThreshold", "graphMinutes"
-            ];
-            for (var i = 0; i < numericFields.length; i++){
-                var fieldId = numericFields[i];
-                var fieldVal = $("#" + fieldId).val()
-                tsConfig[fieldId] = fieldVal.length > 0 ? parseInt(fieldVal) : 0;
-            }
-            tsConfig["autoReload"] = $('#autoReload').is(':checked') ? true : false;
-            tsConfig["timeSlice"] = $("#timeSlice").val();
-
-            var info = [
-                {
-                    display: tsConfig.autoReload,
-                    fieldId: "reload_status",
-                    msg: "Firetower is reloading every "+tsConfig.reloadEvery+" seconds. It's been <span id='last_reload'></span> seconds since the last reload.",
-                    notMsg: "Firetower is not automatically reloading."
-                },
-                {
-                    display: tsConfig.filterThreshold > 0,
-                    fieldId: "filterThreshold_status",
-                    msg: "Firetower is filtering out any categories with fewer than "+tsConfig.filterThreshold+" hits.",
-                    notMsg: "Firetower is not filtering out categories."
-                },
-                {
-                    display: tsConfig.graphMinutes > 0,
-                    fieldId: "graphMinutes_status",
-                    msg: "Firetower is displaying the last "+tsConfig.graphMinutes+" minutes of hits.",
-                    notMsg: "Firetower is displaying all the hits."
-                },
-                {
-                    display: tsConfig.timeSlice.length > 0,
-                    fieldId: "timeSlice_status",
-                    msg: "Firetower is graphing hits in "+tsConfig.timeSlice+" chunks.",
-                    notMsg: "Firetower."
-                }
-
-            ];
-
-            for (var i = 0; i < info.length; i++){
-                var infoObj = info[i];
-                var elem = $("#" + infoObj.fieldId);
-                if (infoObj.display){
-                    elem.html(infoObj.msg);
-                } else {
-                    elem.html(infoObj.notMsg);
-                }
-            }
-            tsData.getCatData(tsData.processCatTs, tsGraphing.prepareGraphs);
-
-            return false;
-        }
-
-        var initialFormSetup = function() {
-            var simpleIds = [
-                "reloadEvery", "filterThreshold", "graphMinutes", "timeSlice"
-            ];
-            for (var i = 0; i < simpleIds.length; i++){
-                $("#" + simpleIds[i]).val(tsConfig[simpleIds[i]]);
-            }
-            $("#autoReload").prop("checked", tsConfig["autoReload"]);
-            handleConfig();
-        }
-
         return {
             graphedCats: graphedCats,
             drawTotalsChart: drawTotalsChart,
@@ -313,9 +361,7 @@ var firetower = function() {
             prepareGraphs: prepareGraphs,
             buildLabel: buildLabel,
             toggleSeries: toggleSeries,
-            writeCatTable: writeCatTable,
-            handleConfig: handleConfig,
-            initialFormSetup: initialFormSetup
+            writeCatTable: writeCatTable
         }
     }());
 
@@ -330,6 +376,13 @@ var firetower = function() {
             'background-color': '#fee',
             opacity: 0.80
         }).appendTo("body").fadeIn(200);
+    }
+
+    var refreshGraphs = function(){
+        tsConfigManagement.getConfigFromHash();
+        tsConfigManagement.refreshInfo();
+        tsData.getCategoryMetadata();
+        tsData.getCatData(tsData.processCatTs, tsGraphing.prepareGraphs);
     }
 
     var init = function(){
@@ -416,14 +469,12 @@ var firetower = function() {
             tsGraphing.graphedCats.push(catId);
         }
         tsData.getCatData(tsData.processCatTs, tsGraphing.prepareGraphs);
-        tsGraphing.initialFormSetup();
 
         setInterval(function() {
             if (tsConfig.autoReload){
                 if (tsConfig.reloadEvery <= timeSinceReload){
                     timeSinceReload = 0;
-                    tsData.getCategoryMetadata();
-                    tsData.getCatData(tsData.processCatTs, tsGraphing.prepareGraphs);
+                    refreshGraphs();
                 }
                 else {
                     timeSinceReload += 1;
@@ -440,6 +491,8 @@ var firetower = function() {
         tsData: tsData,
         tsGraphing: tsGraphing,
         tsConfig: tsConfig,
+        tsConfigManagement:tsConfigManagement,
+        refreshGraphs: refreshGraphs,
         init: init
     }
 }();

@@ -1,5 +1,6 @@
 import difflib
 import json
+import regex
 
 from logbook import Logger
 
@@ -46,12 +47,34 @@ class NaiveBayes(Classifier):
     pass
 
 
+class Regex(Classifier):
+
+    re_map = {}
+
+    def _get_compiled_re(self, re):
+        if not re in self.re_map:
+            self.re_map[re] = regex.compile(re)
+
+        return self.re_map[re]
+
+
+    def check_message(self, cat, error, default_thresh):
+        re = cat.regex
+        if not re:
+            return False
+
+        c_re = self._get_compiled_re(re)
+
+        result = regex.search(c_re, error['sig'])
+        return result is not None
+
+
 class Levenshtein(Classifier):
 
 
     def _halve_ratio_dist(self, ratio):
         """Dynamically close gap between any ratio and 1.00.
-        
+
         Args:
             ratio: float, ratio in question.
         Return:
@@ -149,13 +172,9 @@ class Levenshtein(Classifier):
         sig = error['sig']
 
         custom_thresh = cat.threshold
-        is_custom = False
-        thresh = custom_thresh if custom_thresh is not None else default_thresh
-        if thresh != default_thresh:
-            is_custom = True
+        is_custom = custom_thresh is not None
+        thresh = custom_thresh if is_custom else default_thresh
 
-        exemplar_str = None
-        last_data = cat.events.range(-1, -1)
         exemplar_str = cat.signature
 
         return self.is_similar(sig, exemplar_str, thresh, is_custom=is_custom)
