@@ -3,6 +3,7 @@ build/
 docs/_build/
 Firetower.egg-info/
 firetower/.Python
+firetower/web/static/js/jquery-1.7.1.min.js
 include/
 lib/
 share/
