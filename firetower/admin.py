@@ -1,6 +1,6 @@
 import datetime
 import time
-import simplejson as json
+import json
 import sys
 
 from math import sqrt
