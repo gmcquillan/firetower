@@ -37,19 +37,8 @@ def aggregate():
     return render_template("aggregate.html", **kwargs)
 
 
-@app.route("/category/<cat_id>/")
-def cat_chart(cat_id=None):
-    kwargs = category.Category(REDIS, cat_id=cat_id).to_dict()
-    slice = request.args.get("time_slice", None)
-    if slice:
-        kwargs["time_slice"] = slice
-
-    return render_template(
-        "category.html", cat_id=cat_id, **kwargs)
-
-
-@app.route("/api/categories/")
-def cat_route():
+@app.route("/categories/", methods=["GET"])
+def cat_list():
     ret = {}
     for cat in category.Category.get_all_categories(REDIS):
         ret[cat.cat_id] = cat.to_dict()
@@ -57,8 +46,7 @@ def cat_route():
     return flask.jsonify(ret)
 
 
-@app.route("/api/category/new/", methods=["POST"])
-def cat_new():
+def cat_new(request):
     """For creating new signature categories manually."""
 
     sig = request.form.get("sig", None)
@@ -74,6 +62,96 @@ def cat_new():
         new_cat._set_human(human)
 
     return flask.jsonify(new_cat.to_dict())
+
+
+def cat_update(request, cat_id):
+    """Update an existing category."""
+
+    form = request.form
+    sig = form.get("categorySignature", None)
+    human = form.get("humanName", None)
+    thresh = form.get("categoryThreshold", None)
+
+    cat = category.Category(REDIS, cat_id=cat_id)
+    if sig and cat.signature is not sig:
+        cat.signature = sig
+    if thresh and cat.threshold is not thresh:
+        cat._set_threshold(thresh)
+    if human and cat.human_name is not human:
+        cat._set_human(human)
+
+    #return flask.jsonify(cat.to_dict())
+    return render_template(
+            "category.html", cat_id=cat_id, **cat.to_dict())
+
+
+def cat_view(request, cat_id):
+    """View an existing category."""
+
+    if not cat_id:
+        abort(400)
+    kwargs = category.Category(REDIS, cat_id=cat_id).to_dict()
+    slice = request.args.get("time_slice", None)
+    if slice:
+        kwargs["time_slice"] = slice
+
+    return render_template(
+        "category.html", cat_id=cat_id, **kwargs)
+
+
+def cat_delete(request, cat_id):
+    """Delete an existing category."""
+    pass
+
+
+@app.route("/category/<cat_id>/", methods=["GET", "PUT", "POST", "DELETE"])
+def cat_work(cat_id):
+    """Do work on categories, create, update, delete, view.
+
+    HTTP Methods:
+        GET: view data, for now render as HTML.
+        PUT: create a new categhory.
+        POST: update an existing category*.
+        DELETE: Remove an existing category.
+
+    *Updatable fields include: signature, threshold, human name.
+
+    Returns:
+        html view, or JSON depending on context.
+    """
+    ret = ""
+    if request.method == "PUT":
+        ret = cat_new(request)
+
+    if request.method == "POST":
+        ret = cat_update(request, cat_id)
+
+    if request.method == "GET":
+        ret = cat_view(request, cat_id)
+
+    if request.method == "DELETE":
+        ret = cat_delete(request, cat_id)
+
+    return ret
+
+
+@app.route("/category/<cat_id>/recategorize/", methods=["POST"])
+def cat_recategorize(cat_id):
+    """For recategorizing an existing category.
+
+    This will take all of the existing events and place them into
+    new categories.
+
+    TODO: implement this on the html-side.
+    """
+    # Let's be certain we want to do this.
+    if not request.form.get("certain"):
+        abort(400)
+    if not cat_id:
+        abort(400)
+    thresh = request.form.get("thresh", 0.5)
+    cat = category.Category(cat_id=cat_id)
+    cat.recategorise(thresh)
 
 
 def base_timeseries(cat_id=None):
@@ -119,14 +197,14 @@ def base_timeseries(cat_id=None):
             return time_series
 
 
-@app.route("/api/categories/timeseries/")
+@app.route("/categories/timeseries/")
 def categories_api():
     return flask.jsonify(base_timeseries())
 
 
-@app.route("/api/categories/<category_id>/timeseries/")
-def category_api(category_id):
-    return flask.jsonify({category_id: base_timeseries(category_id)})
+@app.route("/categories/<cat_id>/timeseries/")
+def category_api(cat_id):
+    return flask.jsonify({cat_id: base_timeseries(cat_id)})
 
 
 def main():
