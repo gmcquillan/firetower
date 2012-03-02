@@ -126,7 +126,7 @@ def main():
 
     conf = config.Config(options.conf_path)
     admin = Admin(conf)
-    wait_seconds = options.delay
+    wait_seconds = options.delay * 60
     while 1:
         admin.run(args)
         time.sleep(wait_seconds)
