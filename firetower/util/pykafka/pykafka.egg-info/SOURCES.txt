@@ -1,6 +1,0 @@
-setup.py
-pykafka.egg-info/PKG-INFO
-pykafka.egg-info/SOURCES.txt
-pykafka.egg-info/dependency_links.txt
-pykafka.egg-info/top_level.txt
-pykafka.egg-info/zip-safe
