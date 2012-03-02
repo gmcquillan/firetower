@@ -6,6 +6,7 @@ firetower/.Python
 include/
 lib/
 share/
+tmp/
 *.DS_Store
 *.log
 *.pyc

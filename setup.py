@@ -41,6 +41,7 @@ setup(name="Firetower",
         'redis>2.4.9',
         'PyYAML',
         'python-dateutil==1.5',
-        'regex',
+        'regex==0.1.20120209',
+        'supervisor',
         ],
       )

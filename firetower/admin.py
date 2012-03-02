@@ -46,7 +46,13 @@ class Admin(object):
         Returns:
             tuble of (mean between items, and stdeviation of items and mean).
         """
-        n, mean, std = len(items), 0, 0
+        n, mean, std = 0, 0, 0
+        if items:
+            n = len(items)
+
+        else:
+            return (0.0, 0.0)
+
         for item in items:
             mean = mean + item
 
