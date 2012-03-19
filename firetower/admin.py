@@ -1,6 +1,6 @@
 import datetime
 import time
-import simplejson as json
+import json
 import sys
 
 from math import sqrt
@@ -46,7 +46,13 @@ class Admin(object):
         Returns:
             tuble of (mean between items, and stdeviation of items and mean).
         """
-        n, mean, std = len(items), 0, 0
+        n, mean, std = 0, 0, 0
+        if items:
+            n = len(items)
+
+        else:
+            return (0.0, 0.0)
+
         for item in items:
             mean = mean + item
 
@@ -120,7 +126,7 @@ def main():
 
     conf = config.Config(options.conf_path)
     admin = Admin(conf)
-    wait_seconds = options.delay
+    wait_seconds = options.delay * 60
     while 1:
         admin.run(args)
         time.sleep(wait_seconds)
