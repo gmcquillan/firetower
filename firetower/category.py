@@ -170,21 +170,24 @@ class Events(object):
         self.cat_id = cat_id
         self.redis_conn = redis_conn
 
-    def add_event(self, event, timestamp=None, ts_increment=True):
+    def add_event(self, event, timestamp=None,
+            event_increment=True, ts_increment=True):
         """Add an event to the event list.
 
         Args:
             event: the event dictionary to save into the event set
             timestamp: Optional time stamp to use when inserting the event.
                 Defaults to now.
-            ts_increment: Optional. Increments the counter for this category.
+            event_increment: Optional. boolean - adds event to event series.
+            ts_increment: Optional. boolean - Increments the counter for this category.
 
         """
         if timestamp is None:
             timestamp = int(time.time())
 
         event['ts'] = timestamp
-        self.redis_conn.zadd("data_" + self.cat_id,  json.dumps(event), timestamp)
+        if event_increment:
+            self.redis_conn.zadd("data_" + self.cat_id,  json.dumps(event), timestamp)
         if ts_increment:
             self.redis_conn.hincrby("counter_" + self.cat_id, timestamp, 1)
 
@@ -348,8 +351,10 @@ class Category(object):
         category, which subsequent errors are checked against.
 
         Args:
+            queue: redis connection instance.
+            classifiers: list of Classifier instances.
             error: dict of json payload with a 'sig' key.
-            thresh: float, classification threshold to match.
+            threshold: float, classification threshold to match.
         """
         categories = cls.get_all_categories(queue)
         matched_cat = None

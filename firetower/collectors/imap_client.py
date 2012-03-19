@@ -26,19 +26,25 @@ def main():
         '-d', dest='clear_firstrun', action="store_true", default=False,
         help='Clear backed up emails on first run'
     )
+    parser.add_option(
+        '-p', dest='imap_password', action="store_true", default=False,
+        help='IMAP password.'
+    )
     (options, args) = parser.parse_args()
     conf = config.Config(options.conf_path)
 
     conn = imaplib.IMAP4_SSL(conf.imap_host)
     imap_user = conf.imap_user
+    imap_password = options.user_pass
 
     queue = redis_util.get_redis_conn(
         host=conf.redis_host, port=conf.redis_port, redis_db=conf.redis_db)
 
     processed = 0
 
-    print "Enter email password"
-    imap_password = getpass.getpass()
+    if not imap_password:
+        print "Enter email password"
+        imap_password = getpass.getpass()
 
     conn.login(imap_user, imap_password)
     conn.select("Inbox")

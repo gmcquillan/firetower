@@ -32,6 +32,7 @@ setup(name="Firetower",
             'firetower-display=firetower.display:main',
             'firetower-client=firetower.example_client:main',
             'firetower-web=firetower.web.firetower_web:main',
+            'firetower-imap=firetower.collectors.imap_client:main',
             ],
         },
 
