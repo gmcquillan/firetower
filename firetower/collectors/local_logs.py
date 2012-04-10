@@ -4,7 +4,6 @@ import json
 
 from optparse import OptionParser
 
-from firetower import config
 from firetower import client
 from firetower.util import log_watcher
 
