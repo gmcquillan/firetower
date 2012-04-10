@@ -160,7 +160,9 @@ class LogWatcher(object):
                 self.watch(fname)
 
     def readfile(self, file):
-        lines = file.readlines()
+        cur = file.tell()
+        end = os.path.getsize(file.name)
+        lines = file.read(end - cur).splitlines()
         # TODO(gavin): there's definitely something wrong with this code.
         # File position doesn't seem to change after initial read to EOF
         #print file.tell()
