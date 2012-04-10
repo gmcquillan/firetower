@@ -43,6 +43,7 @@ setup(name="Firetower",
         'PyYAML',
         'python-dateutil==1.5',
         'regex==0.1.20120209',
+        'simplejson',
         'supervisor',
         ],
       )
